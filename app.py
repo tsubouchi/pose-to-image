@@ -1,10 +1,10 @@
 import streamlit as st
 from PIL import Image
 import io
+import base64
 from pose_extractor import extract_pose
 from image_generator import generate_image_with_style
 from pose_analysis import analyze_pose_for_improvements
-import base64
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,14 +23,8 @@ st.markdown("""
     color: #fff;
 }
 
-/* アップロードエリアのスタイル */
-div[data-testid="stFileUploader"] {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* プレビュー画像のサイズ制御 */
-div[data-testid="stImage"] {
+/* 左側のプレビュー画像スタイル */
+.preview-image div[data-testid="stImage"] {
     width: 80px !important;
     height: 80px !important;
     display: flex !important;
@@ -42,20 +36,33 @@ div[data-testid="stImage"] {
     margin: 4px 0 !important;
 }
 
-div[data-testid="stImage"] img {
+.preview-image div[data-testid="stImage"] img {
     max-width: 100% !important;
     max-height: 100% !important;
     object-fit: contain;
 }
 
-/* 出力画像のスタイル */
-div.output-container {
-    width: 375px;
-    height: 280px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
+/* 右側の出力画像スタイル */
+.output-image div[data-testid="stImage"] {
+    width: 375px !important;
+    height: 280px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent;
+    margin: 0 auto !important;
+}
+
+.output-image div[data-testid="stImage"] img {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain;
+}
+
+/* アップロードエリアのスタイル */
+div[data-testid="stFileUploader"] {
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* テキストとマージンの調整 */
@@ -73,7 +80,6 @@ div[data-testid="stDownloadButton"] button {
 </style>
 """, unsafe_allow_html=True)
 
-# Create main layout
 left_col, right_col = st.columns([1, 1], gap="small")
 
 with left_col:
@@ -81,13 +87,17 @@ with left_col:
     pose_file = st.file_uploader("再現したいポーズの画像", type=['png', 'jpg', 'jpeg'], key="pose_upload")
     if pose_file:
         pose_image = Image.open(pose_file)
+        st.markdown('<div class="preview-image">', unsafe_allow_html=True)
         st.image(pose_image, width=80)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.text("スタイル参照画像")
     style_file = st.file_uploader("目標とする画風や洋服の画像", type=['png', 'jpg', 'jpeg'], key="style_upload")
     if style_file:
         style_image = Image.open(style_file)
+        st.markdown('<div class="preview-image">', unsafe_allow_html=True)
         st.image(style_image, width=80)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 with right_col:
     if pose_file and style_file:
@@ -106,8 +116,8 @@ with right_col:
                     status.update(label="✅ 画像の生成が完了", state="complete")
 
             if result_image is not None:
-                st.markdown('<div class="output-container">', unsafe_allow_html=True)
-                st.image(result_image, output_format="PNG", clamp=True)
+                st.markdown('<div class="output-image">', unsafe_allow_html=True)
+                st.image(result_image)
                 st.markdown('</div>', unsafe_allow_html=True)
 
                 buf = io.BytesIO()
@@ -142,9 +152,7 @@ with right_col:
             st.error(f"エラーが発生しました: {str(e)}")
             logger.error(f"Error processing images: {str(e)}")
     else:
-        st.markdown('<div class="output-container">', unsafe_allow_html=True)
-        st.info("👈 左側で2つの画像をアップロードしてください")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.text("👈 左側で2つの画像をアップロードしてください")
 
 with st.expander("💡 使い方"):
     st.text("1. ポーズ参照画像をアップロード\n   再現したいポーズの画像を選択")
