@@ -135,6 +135,37 @@ h4 {
     max-width: 80px !important;
     max-height: 80px !important;
 }
+
+/* 左カラムのコンパクト化 */
+div.css-1r6slb0 {
+    padding: 0.5em !important;
+}
+
+/* セクション間の余白を最小化 */
+div.block-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* アップロードエリアのコンパクト化 */
+div.uploadedFile {
+    margin: 0 !important;
+    padding: 0.2em !important;
+}
+
+/* ファイルアップローダーの余白削除 */
+div.css-1x8cf1d {
+    padding: 0 !important;
+    margin-top: 0.2em !important;
+    margin-bottom: 0.2em !important;
+}
+
+/* アップロード説明テキストの余白削除 */
+div.css-1adrfps {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
