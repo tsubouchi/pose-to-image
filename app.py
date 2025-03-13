@@ -28,7 +28,7 @@ st.markdown("""
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #333;
-    max-height: calc(45vh - 20px);
+    max-height: calc(25vh - 20px);
     overflow: hidden;
 }
 
@@ -56,7 +56,7 @@ st.markdown("""
 }
 
 .stImage {
-    max-height: calc(40vh - 100px) !important;
+    max-height: calc(13vh) !important;
 }
 
 div[data-testid="stImage"] {
@@ -64,8 +64,17 @@ div[data-testid="stImage"] {
 }
 
 div[data-testid="stImage"] > img {
-    max-height: calc(40vh - 100px);
+    max-height: calc(13vh);
     width: auto !important;
+}
+
+/* ファイルアップローダーのサイズ調整 */
+div[data-testid="stFileUploader"] {
+    padding: 0.5rem;
+}
+
+div[data-testid="stFileUploader"] > div > div {
+    padding: 0.25rem;
 }
 </style>
 """, unsafe_allow_html=True)
