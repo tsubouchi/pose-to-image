@@ -138,6 +138,12 @@ div.generated-result {
     align-items: center !important;
     justify-content: center !important;
 }
+
+/* マークダウンの余白を削除 */
+div.css-1629p8f {
+    margin: 0 !important;
+    padding: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
