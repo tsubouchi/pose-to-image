@@ -37,6 +37,22 @@ st.markdown("""
     overflow-y: auto;
 }
 
+.status-area {
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+.preview-area {
+    background-color: #0a0a0a;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .upload-header {
     font-size: 0.9em;
     margin-bottom: 2px;
@@ -51,24 +67,17 @@ div[data-testid="stImage"] img {
     margin: 0 auto;
 }
 
+/* 生成結果の画像サイズ調整 */
+.preview-area div[data-testid="stImage"] img {
+    max-width: 80% !important;
+    max-height: 50vh !important;
+    margin: 0 auto;
+}
+
 /* ステータス表示の調整 */
 div[data-testid="stStatus"] {
     padding: 0.25rem !important;
     margin: 0.25rem 0 !important;
-}
-
-/* 生成結果のセクション */
-.generation-step {
-    background-color: rgba(25, 118, 210, 0.05);
-    border-radius: 4px;
-    padding: 10px;
-    margin: 5px 0;
-}
-
-/* 生成結果の画像サイズ調整 */
-.generation-step div[data-testid="stImage"] img {
-    max-width: 40% !important;
-    max-height: 30vh !important;
 }
 
 /* ヘッダーの調整 */
@@ -118,43 +127,38 @@ with right_col:
 
     if pose_file and style_file:
         try:
-            # Pose Analysis Step
-            st.markdown('<div class="generation-step">', unsafe_allow_html=True)
-            st.markdown("#### 🔍 ポーズ解析")
-            with st.status("ポーズを解析中...") as status:
+            # Status Area
+            st.markdown('<div class="status-area">', unsafe_allow_html=True)
+
+            # Pose Analysis Status
+            with st.status("🔍 ポーズを解析中...") as status:
                 pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
                 if pose_result is None:
                     st.error("ポーズの検出に失敗しました。別の画像を試してください。")
                     st.stop()
                 status.update(label="✅ ポーズの解析が完了", state="complete")
 
-                if pose_descriptions:
-                    st.markdown("**検出されたポーズの特徴:**")
-                    for key, value in pose_descriptions.items():
-                        if not key.endswith("_desc"):
-                            continue
-                        label = key.replace("_desc", "").replace("_", " ").title()
-                        st.markdown(f"- {label}: {value}")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # Image Generation Step
-            st.markdown('<div class="generation-step">', unsafe_allow_html=True)
-            st.markdown("#### 🎨 画像生成")
-            with st.status("画像を生成中...") as status:
+            # Image Generation Status
+            with st.status("🎨 画像を生成中...") as status:
                 result_image = generate_image_with_style(pose_image, style_image)
                 if result_image:
                     status.update(label="✅ 画像の生成が完了", state="complete")
-                    st.image(result_image, use_container_width=False)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                    # Download button
-                    buf = io.BytesIO()
-                    result_image.save(buf, format='PNG')
-                    st.download_button(
-                        label="💾 生成された画像をダウンロード",
-                        data=buf.getvalue(),
-                        file_name="generated_pose.png",
-                        mime="image/png"
-                    )
+            # Preview Area
+            st.markdown('<div class="preview-area">', unsafe_allow_html=True)
+            if result_image:
+                st.image(result_image, use_container_width=False)
+
+                # Download button
+                buf = io.BytesIO()
+                result_image.save(buf, format='PNG')
+                st.download_button(
+                    label="💾 生成された画像をダウンロード",
+                    data=buf.getvalue(),
+                    file_name="generated_pose.png",
+                    mime="image/png"
+                )
             st.markdown('</div>', unsafe_allow_html=True)
 
         except Exception as e:
@@ -165,7 +169,7 @@ with right_col:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Instructions outside of the result section
+# Instructions
 with st.expander("💡 使い方"):
     st.markdown("""
     1. ポーズ参照画像をアップロード
