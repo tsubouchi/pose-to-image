@@ -125,7 +125,7 @@ low quality, jpeg artifacts, signature, watermark, blurry"""
     }
 }
 
-# Top section: Multiple file upload
+# File uploader
 uploaded_files = st.file_uploader(
     "Drop your images here", 
     type=['png', 'jpg', 'jpeg'],
@@ -147,25 +147,36 @@ if uploaded_files:
             progress_bar = st.progress(0)
             status_text = st.empty()
 
-        # Create columns for displaying images
+        # Process each image
         num_images = len(uploaded_files)
-        cols = st.columns(min(4, num_images))  # Maximum 4 columns
-
-        processed_images = []
         for idx, uploaded_file in enumerate(uploaded_files):
             # Update progress
             progress = (idx + 1) / num_images
             progress_bar.progress(progress)
             status_text.text(f"Processing image {idx + 1} of {num_images}")
 
+            # Create a container for this image set
+            st.markdown(f"### Image Set {idx + 1}")
+
             # Step 1: Original Image
-            image = Image.open(uploaded_file)
+            with st.container():
+                st.subheader("Step 1: Original Image")
+                image = Image.open(uploaded_file)
+                st.image(image, caption="Original Image", use_column_width=True)
 
-            # Step 2: Extract and display pose
-            pose_image = extract_pose(image)
+            # Step 2: Pose Extraction
+            with st.container():
+                st.subheader("Step 2: Pose Extraction")
+                pose_image = extract_pose(image)
+                if pose_image is not None:
+                    st.image(pose_image, caption="Extracted Pose", use_column_width=True)
+                else:
+                    st.error("Failed to extract pose from the image")
+                    continue
 
-            # Step 3: Generate prompt and create new image
-            if pose_image is not None:
+            # Step 3: Generate Prompt
+            with st.container():
+                st.subheader("Step 3: Prompt Generation")
                 # Generate pose description
                 pose_description = """
                 full body pose, standing pose, looking at viewer,
@@ -179,43 +190,41 @@ if uploaded_files:
                 generation_prompt = style_config["base_prompt"].format(
                     pose_description=pose_description
                 )
+                st.text_area("Generation Prompt", value=generation_prompt, height=100, disabled=True)
+                st.text_area("Negative Prompt", value=style_config["negative_prompt"], height=50, disabled=True)
 
-                # Step 4: Generate and display new image
-                generated_image = generate_image(
-                    pose_image, 
-                    generation_prompt,
-                    st.session_state.system_prompt
-                )
+            # Step 4: Generate Image
+            with st.container():
+                st.subheader("Step 4: Generated Image")
+                try:
+                    generated_image = generate_image(
+                        pose_image, 
+                        generation_prompt,
+                        st.session_state.system_prompt
+                    )
+                    if generated_image is not None:
+                        st.image(generated_image, caption="Generated Image", use_column_width=True)
 
-                # Store processed images
-                processed_images.append({
-                    'original': image,
-                    'pose': pose_image,
-                    'generated': generated_image
-                })
+                        # Add download button
+                        buf = io.BytesIO()
+                        generated_image.save(buf, format='PNG')
+                        st.download_button(
+                            label="Download Generated Image",
+                            data=buf.getvalue(),
+                            file_name=f"generated_image_{idx+1}.png",
+                            mime="image/png"
+                        )
+                    else:
+                        st.error("Failed to generate image")
+                except Exception as gen_error:
+                    st.error(f"Error generating image: {str(gen_error)}")
 
-        # Clear progress bar and show completion message
+            # Add a separator between image sets
+            st.markdown("---")
+
+        # Clear progress indicators after completion
         progress_bar.empty()
         status_text.success(f"Successfully processed {num_images} images!")
-
-        # Display all processed images in a grid
-        for idx, images in enumerate(processed_images):
-            col_idx = idx % 4
-            with cols[col_idx]:
-                st.subheader(f"Image Set {idx + 1}")
-                st.image(images['original'], caption="Original Image")
-                st.image(images['pose'], caption="Extracted Pose")
-                if images['generated'] is not None:
-                    st.image(images['generated'], caption="Generated Image")
-                    # Add download button
-                    buf = io.BytesIO()
-                    images['generated'].save(buf, format='PNG')
-                    st.download_button(
-                        label="Download Generated Image",
-                        data=buf.getvalue(),
-                        file_name=f"generated_image_{idx+1}.png",
-                        mime="image/png"
-                    )
 
     except Exception as e:
         st.error(f"Error processing images: {str(e)}")
@@ -226,8 +235,10 @@ st.markdown("""
 ### How to Use:
 1. Upload one or more images containing people
 2. Select a generation style to set the base prompt
-3. Wait for all images to be processed:
-   - Each image will go through pose extraction
-   - Generated images will be created based on the extracted poses
-4. Download the generated images individually using the download buttons
+3. Each image will be processed through four steps:
+   - Step 1: Original Image Display
+   - Step 2: Pose Extraction
+   - Step 3: Prompt Generation
+   - Step 4: Image Generation
+4. Download generated images using the download buttons below each result
 """)
