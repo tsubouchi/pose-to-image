@@ -32,8 +32,8 @@ st.markdown("""
 .generated-result {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 2px;
-    margin-top: 1px;
+    padding: 1px;
+    margin-top: 0px;
     min-height: 280px;
     display: flex;
     flex-direction: column;
@@ -47,6 +47,7 @@ st.markdown("""
     justify-content: center !important;
     align-items: center !important;
     width: 100% !important;
+    margin: 0 !important;
 }
 
 .generated-result div[data-testid="stImage"] img {
@@ -56,26 +57,17 @@ st.markdown("""
     margin: 0 auto !important;
 }
 
-/* ステータス表示を横並びにコンパクト化 */
-div[data-testid="stHorizontalBlock"] {
-    gap: 0.5rem !important;
-}
-
-div[data-testid="stImage"] {
-    margin: 0 !important;
-}
-
 /* コンパクトなヘッダー */
 h2 {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 1.3em !important;
+    font-size: 1.2em !important;
     line-height: 1 !important;
 }
 
 /* アップロード部分のコンパクト化 */
 div[data-testid="stFileUploader"] {
-    padding: 0.25rem !important;
+    padding: 0.15rem !important;
 }
 
 /* ダウンロードボタンの調整 */
@@ -88,8 +80,8 @@ div[data-testid="stDownloadButton"] {
 
 /* ステータス表示の調整 */
 div[data-testid="stStatus"] {
-    padding: 0.15rem !important;
-    margin: 0.15rem 0 !important;
+    padding: 0.1rem !important;
+    margin: 0.1rem 0 !important;
 }
 
 /* ポーズ提案セクションのスタイル */
