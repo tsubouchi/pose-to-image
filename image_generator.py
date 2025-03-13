@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Flux API configuration
 FLUX_API_KEY = "5db59d74-127a-4240-a028-2662d88522a4:f7e522e4afbf3486f03f771446bbfe4b"
-FLUX_API_URL = "https://fal.ai/api/public/models/flux-pro/v1.1-ultra/infer"
+FLUX_API_URL = "https://fal.ai/api/public/models/flux-lora/infer"
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -40,14 +40,18 @@ def generate_image(pose_image, style_prompt, system_prompt):
         payload = {
             "input": {
                 "prompt": style_prompt,
-                "negative_prompt": "multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers",
+                "image_size": "1024x1024",
                 "num_inference_steps": 30,
                 "guidance_scale": 7.5,
-                "controlnet_conditioning_scale": 1.0,
-                "image_size": "1024x1024",
                 "enable_safety_checker": False,
                 "num_images": 1,
-                "image": f"data:image/png;base64,{encoded_image}"
+                "image": f"data:image/png;base64,{encoded_image}",
+                "loras": [
+                    {
+                        "path": "pose-lora",
+                        "scale": 1.0
+                    }
+                ]
             },
             "logs": True
         }
