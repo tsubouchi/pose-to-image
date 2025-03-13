@@ -23,18 +23,6 @@ st.markdown("""
     color: #fff;
 }
 
-/* プレビューエリアの固定サイズ設定 */
-.preview-container {
-    width: 100px;
-    height: 100px;
-    background-color: #1a1a1a;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-}
-
 /* アップロードエリアのスタイル */
 div[data-testid="stFileUploader"] {
     padding: 0 !important;
@@ -42,26 +30,32 @@ div[data-testid="stFileUploader"] {
 }
 
 /* プレビュー画像のサイズ制御 */
-.preview-image {
-    max-width: 80px !important;
-    max-height: 80px !important;
+div[data-testid="stImage"] {
+    width: 80px !important;
+    height: 80px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #1a1a1a;
+    border-radius: 4px;
+    padding: 0 !important;
+    margin: 4px 0 !important;
+}
+
+div[data-testid="stImage"] img {
+    max-width: 100% !important;
+    max-height: 100% !important;
     object-fit: contain;
 }
 
-/* 出力画像エリアの設定 */
-.output-container {
+/* 出力画像のスタイル */
+div.output-container {
     width: 375px;
     height: 280px;
-    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.output-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+    margin: 0 auto;
 }
 
 /* テキストとマージンの調整 */
@@ -71,39 +65,31 @@ div[data-testid="stMarkdown"] {
     line-height: 1 !important;
 }
 
-/* ダウンロードボタンの配置 */
+/* ダウンロードボタン */
 div[data-testid="stDownloadButton"] button {
-    margin: 4px 0 !important;
     width: 100%;
+    margin: 4px 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Create main layout with two columns
+# Create main layout
 left_col, right_col = st.columns([1, 1], gap="small")
 
 with left_col:
-    st.text("Input Images")
-
-    # ポーズ参照画像
+    st.text("ポーズ参照画像")
     pose_file = st.file_uploader("再現したいポーズの画像", type=['png', 'jpg', 'jpeg'], key="pose_upload")
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.markdown('<div class="preview-container">', unsafe_allow_html=True)
-        st.image(pose_image, width=80, output_format="PNG", clamp=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.image(pose_image, width=80)
 
-    # スタイル参照画像
+    st.text("スタイル参照画像")
     style_file = st.file_uploader("目標とする画風や洋服の画像", type=['png', 'jpg', 'jpeg'], key="style_upload")
     if style_file:
         style_image = Image.open(style_file)
-        st.markdown('<div class="preview-container">', unsafe_allow_html=True)
-        st.image(style_image, width=80, output_format="PNG", clamp=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.image(style_image, width=80)
 
 with right_col:
-    st.text("Generated Result")
-
     if pose_file and style_file:
         try:
             result_image = None
