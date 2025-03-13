@@ -23,25 +23,30 @@ def generate_image(pose_image, style_prompt):
             "data": image_data
         }
 
-        # Create system prompt
-        system_prompt = (
-            "あなたは棒人間のポーズから日本のアニメスタイルのキャラクターを生成する専門家です。"
-            "入力された画像は実写から抽出されたポーズで、カラーラインで表現されています。"
-            "以下の要件に従って新しい画像を生成してください："
-            "1. 棒人間で示された正確なポーズと比率を維持する"
-            "2. 指定されたスタイルに合わせて詳細なキャラクター特徴を追加する"
-            "3. キャラクターを引き立てる適切な背景を作成する"
-            "4. 高品質で一貫性のある出力を確保する"
-            "\n生成された画像はimagen3の品質で出力してください。"
-        )
+        # システムプロンプト - 2段階処理
+        system_prompt = """
+        このプロセスは2段階で行います：
 
-        # Combine prompts
-        full_prompt = f"{system_prompt}\n\n{style_prompt}"
+        1. まず、提供された棒人間の画像を解析してください。
+        これは実写画像から抽出されたポーズデータで、人物の姿勢や動きを表現しています。
+
+        2. 次に、解析したポーズに基づいて新しい画像を生成してください。
+        以下の要件で画像を生成します：
+        - imagen3の品質レベルで出力
+        - 抽出されたポーズと完全に一致する姿勢
+        - 現代的な日本の女子高生キャラクター
+        - 自然な光と影の表現
+        - 背景は日本の日常風景
+
+        出力形式：高品質なイラスト画像
+        """
 
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         response = model.generate_content([
-            full_prompt,
+            {
+                "text": f"{system_prompt}\n\n{style_prompt}"
+            },
             image_parts
         ])
 
