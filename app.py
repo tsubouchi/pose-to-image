@@ -244,7 +244,6 @@ with right_col:
                 pose_analysis = analyze_pose_for_improvements(pose_base64)
                 status.update(label="✅ ポーズの分析が完了", state="complete")
 
-            st.markdown('<div class="pose-suggestions">', unsafe_allow_html=True)
             st.markdown("### 💡 AIポーズアドバイス")
 
             # 現在のポーズの説明
@@ -269,8 +268,6 @@ with right_col:
                         </div>""",
                         unsafe_allow_html=True
                     )
-
-            st.markdown('</div>', unsafe_allow_html=True)
 
             # Pose Analysis Details at the bottom
             with st.expander("🔍 ポーズ解析の詳細"):
