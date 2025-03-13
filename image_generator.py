@@ -36,7 +36,7 @@ def parse_gemini_response(response_text: str) -> dict:
 
 def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
     """
-    Use Gemini to analyze both images and generate detailed descriptions
+    Use Gemini to analyze both images and provide detailed descriptions
     """
     try:
         # Convert images to base64
@@ -64,12 +64,22 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
 - Detail gesture and body language
 - Note any distinctive pose elements
 
-2. For the second image (style reference):
+2. For the second image (style and clothing reference):
 - Identify the artistic style (anime, photorealistic, etc)
-- Analyze technical aspects like camera angle and lighting
-- Describe color palette and tones
-- Note texture and material qualities
-- Identify distinctive visual elements
+- Detailed clothing description:
+  * Type of garments
+  * Colors and patterns
+  * Material and texture
+  * Fit and style
+  * Accessories and details
+- Technical aspects:
+  * Camera angle and composition
+  * Lighting setup and mood
+  * Color grading and effects
+- Overall style elements:
+  * Art direction
+  * Visual effects
+  * Background treatment
 
 Format the response exactly like this:
 {
@@ -78,13 +88,19 @@ Format the response exactly like this:
     "gesture": "specific details",
     "key_elements": ["distinctive features"]
   },
+  "clothing": {
+    "garments": ["list of clothing items"],
+    "colors": ["color palette"],
+    "materials": ["fabric and texture details"],
+    "accessories": ["all accessories"],
+    "special_details": ["unique design elements"]
+  },
   "style": {
     "artistic_style": "specific style",
     "technical": {
       "camera": "angle and settings",
       "lighting": "lighting details"
     },
-    "colors": ["main colors"],
     "effects": ["visual effects"]
   }
 }"""
@@ -142,23 +158,32 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Using this image analysis, create a Stable Diffusion prompt that will precisely recreate the pose in the style of the reference image.
+                    "text": f"""Using this image analysis, create a detailed Stable Diffusion prompt that will precisely recreate both the pose and clothing style.
 
 Analysis: {json.dumps(analysis, indent=2)}
 
 Requirements:
-1. Start with quality tags: masterpiece, best quality, highly detailed
-2. Include precise pose description
-3. Specify artistic style
-4. Detail lighting and atmosphere
-5. Include color palette
-6. Specify camera angle and composition
-7. Note special effects or techniques
-8. Include negative prompt to maintain style
+1. Quality and style tags:
+   - Start with: masterpiece, best quality, highly detailed
+   - Include specific artistic style
+2. Pose description:
+   - Precise body position and gesture
+   - Expression and attitude
+3. Clothing details:
+   - Exact garment descriptions
+   - Colors and patterns
+   - Materials and textures
+   - Accessories and details
+4. Technical aspects:
+   - Lighting setup
+   - Camera angle
+   - Color grading
+   - Special effects
+5. Background and atmosphere
 
 Format the response EXACTLY like this, with no additional text:
 {{
-  "main_prompt": "masterpiece, best quality, [style], [pose], [lighting], [colors], [composition], [effects]",
+  "main_prompt": "masterpiece, best quality, [style], [pose], [clothing], [lighting], [camera], [effects]",
   "negative_prompt": "avoid these elements",
   "parameters": {{
     "cfg_scale": 7,

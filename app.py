@@ -1,5 +1,4 @@
 import streamlit as st
-import mediapipe as mp
 from PIL import Image
 import io
 from pose_extractor import extract_pose
@@ -22,48 +21,27 @@ st.markdown("""
     color: #fff;
 }
 
-.image-card {
+.input-section {
     background-color: #0a0a0a;
     border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 12px rgba(255,255,255,0.03);
+    padding: 15px;
     margin-bottom: 15px;
     border: 1px solid #333;
 }
 
-.status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 500;
-    background-color: rgba(25, 118, 210, 0.1);
-    color: #64b5f6;
-    margin-bottom: 5px;
-}
-
-.step-header {
-    margin-bottom: 15px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 10px;
-}
-
-.step-number {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    background-color: #1976d2;
-    border-radius: 12px;
-    text-align: center;
-    line-height: 24px;
-    margin-right: 8px;
-}
-
 .result-container {
-    padding: 15px;
     background-color: #1a1a1a;
     border-radius: 8px;
-    margin-top: 20px;
+    padding: 15px;
+    height: 100%;
+}
+
+.upload-header {
+    font-size: 1.1em;
+    font-weight: 500;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #333;
 }
 
 .processing-status {
@@ -75,25 +53,15 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("AI Style Transfer with Pose Matching")
-st.markdown("""
-このアプリケーションでは、2つの画像から新しい画像を生成します：
-1. ポーズ画像：再現したい姿勢やポーズを含む画像
-2. スタイル画像：目標とする画風や見た目の画像
+# Create main layout with two columns
+left_col, right_col = st.columns([1, 1], gap="large")
 
-AIが1枚目のポーズを2枚目の画風で再現した新しい画像を生成します。
-""")
+with left_col:
+    st.markdown("## Input Images")
 
-# Create two columns for image upload
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("""
-    <div class="step-header">
-        <span class="step-number">1</span>
-        <span>ポーズ参照画像をアップロード</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # Pose Image Upload Section
+    st.markdown('<div class="input-section">', unsafe_allow_html=True)
+    st.markdown('<div class="upload-header">ポーズ参照画像</div>', unsafe_allow_html=True)
     pose_file = st.file_uploader(
         "再現したいポーズが写っている画像をアップロード",
         type=['png', 'jpg', 'jpeg'],
@@ -101,15 +69,12 @@ with col1:
     )
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image, caption="ポーズ参照画像", use_container_width=True)
+        st.image(pose_image, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-with col2:
-    st.markdown("""
-    <div class="step-header">
-        <span class="step-number">2</span>
-        <span>スタイル参照画像をアップロード</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # Style Image Upload Section
+    st.markdown('<div class="input-section">', unsafe_allow_html=True)
+    st.markdown('<div class="upload-header">スタイル参照画像</div>', unsafe_allow_html=True)
     style_file = st.file_uploader(
         "目標とする画風の画像をアップロード",
         type=['png', 'jpg', 'jpeg'],
@@ -117,49 +82,58 @@ with col2:
     )
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image, caption="スタイル参照画像", use_container_width=True)
+        st.image(style_image, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Process images when both are uploaded
-if pose_file and style_file:
-    st.markdown("""
-    <div class="step-header">
-        <span class="step-number">3</span>
-        <span>生成結果</span>
-    </div>
-    """, unsafe_allow_html=True)
+with right_col:
+    st.markdown("## Generated Result")
 
-    with st.spinner('画像を生成中...'):
-        try:
-            # Extract pose
-            with st.status("ポーズを解析中...") as status:
-                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                if pose_result is None:
-                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                    st.stop()
-                status.update(label="ポーズの解析が完了しました", state="complete")
+    # Process images when both are uploaded
+    if pose_file and style_file:
+        st.markdown('<div class="result-container">', unsafe_allow_html=True)
 
-            # Generate image
-            with st.status("画像を生成中...") as status:
-                result_image = generate_image_with_style(pose_image, style_image)
-                if result_image:
-                    status.update(label="画像の生成が完了しました", state="complete")
-                    st.markdown('<div class="result-container">', unsafe_allow_html=True)
-                    st.image(result_image, caption="生成された画像", use_container_width=True)
+        with st.spinner('画像を生成中...'):
+            try:
+                # Extract pose
+                with st.status("ポーズを解析中...") as status:
+                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                    if pose_result is None:
+                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                        st.stop()
+                    status.update(label="ポーズの解析が完了しました", state="complete")
 
-                    # Add download button
-                    buf = io.BytesIO()
-                    result_image.save(buf, format='PNG')
-                    st.download_button(
-                        label="生成された画像をダウンロード",
-                        data=buf.getvalue(),
-                        file_name="generated_pose.png",
-                        mime="image/png"
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                # Generate image
+                with st.status("画像を生成中...") as status:
+                    result_image = generate_image_with_style(pose_image, style_image)
+                    if result_image:
+                        status.update(label="画像の生成が完了しました", state="complete")
+                        st.image(result_image, caption="生成された画像", use_container_width=True)
 
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-            logger.error(f"Error processing images: {str(e)}")
+                        # Add download button
+                        buf = io.BytesIO()
+                        result_image.save(buf, format='PNG')
+                        st.download_button(
+                            label="生成された画像をダウンロード",
+                            data=buf.getvalue(),
+                            file_name="generated_pose.png",
+                            mime="image/png"
+                        )
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
+                logger.error(f"Error processing images: {str(e)}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="result-container" style="text-align: center; padding: 40px;">
+            <p>画像を生成するには、左側で2つの画像をアップロードしてください：</p>
+            <ol style="text-align: left; display: inline-block;">
+                <li>ポーズ参照画像：再現したいポーズが写っている画像</li>
+                <li>スタイル参照画像：目標とする画風や洋服の画像</li>
+            </ol>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Instructions
 st.markdown("""
