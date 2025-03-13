@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-def generate_image(pose_image, style_prompt):
+def generate_image(pose_image, style_prompt, system_prompt):
     """
     Generate a new image using DALL-E 3 based on the pose image and style
     """
@@ -27,60 +27,44 @@ def generate_image(pose_image, style_prompt):
         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
             temp_files.append(tmp_file.name)
             pose_image.save(tmp_file.name, format='PNG')
-            logger.debug(f"Input image saved to temporary file: {tmp_file.name}")
+            logger.debug(f"Input pose image saved to temporary file: {tmp_file.name}")
 
         # Create detailed prompt for DALL-E
-        base_prompt = """
-        Create a high-quality image based on the provided pose reference.
-        The pose must exactly match the stick figure reference, maintaining precise body positioning and proportions.
+        prompt = f"""
+        System Instructions:
+        {system_prompt}
 
-        Pose and Composition:
-        - Follow the exact pose structure from the stick figure reference
-        - Maintain natural body proportions and dynamic posing
-        - Ensure anatomically correct articulation of joints and limbs
-        - Create a balanced and visually appealing composition
+        Reference Image Description:
+        The provided image shows a stick figure pose that must be precisely replicated.
+        This pose represents the exact body position, angles, and proportions that should be maintained.
 
-        Technical Requirements:
-        - Render in high resolution with sharp details
-        - Use proper lighting and shadows for depth
-        - Implement accurate perspective and depth
-        - Pay attention to small details and textures
-        """
+        Key Focus Areas:
+        1. Pose Accuracy:
+        - Maintain exact joint angles and positions
+        - Keep the same body orientation and tilt
+        - Preserve limb positions and relationships
+        - Match the overall pose composition
 
-        # Add style-specific prompt
-        if "アニメ" in style_prompt:
-            base_prompt += """
-            Anime Style Specifications:
-            - Modern Japanese anime art style with clean lines
-            - Vibrant and harmonious color palette
-            - Expressive eyes and facial features
-            - Dynamic hair styling with natural flow
-            - Detailed clothing with proper fabric folds
-            - Maintain anime-specific proportions and aesthetics
-            """
-        else:
-            base_prompt += """
-            Photorealistic Style Specifications:
-            - Highly detailed photorealistic rendering
-            - Natural skin textures and features
-            - Realistic fabric materials and textures
-            - Professional photography lighting techniques
-            - Subtle environmental reflections
-            - Natural color grading and contrast
-            """
+        2. Body Mechanics:
+        - Ensure natural joint articulation
+        - Maintain proper weight distribution
+        - Keep realistic body proportions
+        - Respect anatomical limitations
 
-        # Combine with style-specific details
-        final_prompt = f"""
-        {base_prompt}
+        3. Perspective and Depth:
+        - Match the viewing angle of the stick figure
+        - Maintain correct foreshortening
+        - Preserve spatial relationships between body parts
+        - Keep consistent perspective throughout
 
-        Style Details:
+        Style Specifications:
         {style_prompt}
 
-        Additional Requirements:
-        - Ensure the output matches the selected style perfectly
-        - Create a cohesive scene with appropriate background
-        - Add subtle environmental details that enhance the composition
-        - Maintain professional quality standards throughout
+        Critical Requirements:
+        - The output MUST match the stick figure pose exactly
+        - Do not mirror or flip the pose
+        - Maintain all spatial relationships between body parts
+        - Ensure the character's gaze direction matches the pose
         """
 
         logger.debug("Sending request to DALL-E API")
@@ -88,7 +72,7 @@ def generate_image(pose_image, style_prompt):
         # Generate image using DALL-E 3
         response = client.images.generate(
             model="dall-e-3",
-            prompt=final_prompt,
+            prompt=prompt,
             n=1,
             size="1024x1024",
             quality="hd",
