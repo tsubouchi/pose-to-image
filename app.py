@@ -40,10 +40,18 @@ st.markdown("""
 }
 
 /* 生成結果の画像サイズ調整 */
+.generated-result div[data-testid="stImage"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
 .generated-result div[data-testid="stImage"] img {
     max-width: 100% !important;
     height: 280px !important;
-    object-fit: contain;
+    object-fit: contain !important;
+    margin: 0 auto !important;
 }
 
 /* ステータス表示を横並びにコンパクト化 */
@@ -71,6 +79,9 @@ div[data-testid="stFileUploader"] {
 /* ダウンロードボタンの調整 */
 div[data-testid="stDownloadButton"] {
     margin-top: 5px !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 /* ステータス表示の調整 */
@@ -131,7 +142,7 @@ with right_col:
 
             # 即時に画像を表示
             st.markdown('<div class="generated-result">', unsafe_allow_html=True)
-            st.image(result_image, width=300)
+            st.image(result_image, width=300, use_column_width=True)
 
             # Download button
             buf = io.BytesIO()
