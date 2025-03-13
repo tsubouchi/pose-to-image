@@ -33,7 +33,7 @@ st.markdown("""
     background: #1a1a1a;
     border-radius: 4px;
     padding: 0 !important;
-    margin: 4px 0 !important;
+    margin: 2px 0 !important;
 }
 
 .preview-image div[data-testid="stImage"] img {
@@ -44,8 +44,8 @@ st.markdown("""
 
 /* 右側の出力画像スタイル */
 .output-image div[data-testid="stImage"] {
-    width: 375px !important;
-    height: 280px !important;
+    width: 300px !important;
+    height: 224px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -75,7 +75,7 @@ div[data-testid="stMarkdown"] {
 /* ダウンロードボタン */
 div[data-testid="stDownloadButton"] button {
     width: 100%;
-    margin: 4px 0 !important;
+    margin: 2px 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
