@@ -344,7 +344,7 @@ Priority: Accuracy of pose over visual aesthetics"""
                         st.error(f"Error in pose to human conversion: {str(e)}")
                         continue
 
-                # Step 5: Final Style Generation
+                # Step 5: Generate realistic photo first, then convert to anime
                 with cols[4]:
                     st.markdown("""
                     <div class="step-header">
@@ -353,16 +353,20 @@ Priority: Accuracy of pose over visual aesthetics"""
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # Second pass: Generate new anime character from bone structure
-                        style_prompt = f"""System Instructions: CRITICAL - This stick figure represents a bone structure. Follow these steps to create an anime character:
+                        # First generate realistic photo
+                        style_prompt = f"""System Instructions: Generate a realistic photograph following the bone structure:
 
-1. Analyze Bone Structure:
-- Input image shows bone/joint connections in green
-- Each line represents bone structure
-- Each connection point marks a joint position
-- This is a TECHNICAL BONE STRUCTURE, not an artistic reference
+1. Create Realistic Human Photo:
+- Use bone structure as precise positioning guide
+- Create a realistic human photograph
+- Natural lighting and shadows
+- High quality photographic detail
+- Professional photography style
+- Indoor environment setting
+- Clean background with good depth
+- Natural skin tones and textures
 
-2. Build Character Following Bone Layout:
+2. Follow Exact Bone Structure:
 Upper Body:
 - Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
 - Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
@@ -372,42 +376,56 @@ Lower Body:
 - Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
 - Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-3. Character Specifications:
-- High school student
-- Wearing sailor uniform with pleated skirt
-- In classroom environment
-- Natural lighting from windows
-- Professional anime art style
+Technical Requirements:
+- Photorealistic quality
+- Natural human proportions
+- Professional photography lighting
+- Sharp focus and clear details
+- Natural pose following bone structure
 
-4. Technical Requirements:
-- Build character directly on bone structure
-- Match every joint position exactly
-- Keep proportions anatomically correct
-- Ensure weight distribution follows bone structure
+masterpiece, best quality, highly detailed realistic photograph"""
 
-masterpiece, best quality, highly detailed anime illustration"""
-
-                        final_image = generate_image(
-                            pose_image,  # Use pose_image instead of human_pose
+                        photo_image = generate_image(
+                            pose_image,
                             style_prompt,
-                            "Create anime character directly from bone structure, matching joints exactly"
+                            "Create photorealistic human image from bone structure"
                         )
-                        if final_image is not None:
-                            st.image(final_image, use_container_width=True)
-                            st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
 
-                            # Add download button
-                            buf = io.BytesIO()
-                            final_image.save(buf, format='PNG')
-                            st.download_button(
-                                label="Download",
-                                data=buf.getvalue(),
-                                file_name=f"generated_image_{idx+1}.png",
-                                mime="image/png",
-                                use_container_width=True
+                        if photo_image is not None:
+                            # Convert photo to anime style
+                            anime_prompt = """Convert to high quality anime style:
+- School uniform with pleated skirt
+- Professional anime art style
+- Clean lineart and shading
+- Maintain exact pose and proportions
+- Classroom environment
+- Natural lighting
+masterpiece, best quality, anime art style"""
+
+                            final_image = generate_image(
+                                photo_image,
+                                anime_prompt,
+                                "Convert realistic photo to anime style"
                             )
+
+                            if final_image is not None:
+                                st.image(final_image, use_container_width=True)
+                                st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
+
+                                # Add download button
+                                buf = io.BytesIO()
+                                final_image.save(buf, format='PNG')
+                                st.download_button(
+                                    label="Download",
+                                    data=buf.getvalue(),
+                                    file_name=f"generated_image_{idx+1}.png",
+                                    mime="image/png",
+                                    use_container_width=True
+                                )
+                            else:
+                                st.error("Failed to convert to anime style")
                         else:
-                            st.error("Failed to generate final image")
+                            st.error("Failed to generate realistic photo")
                     except Exception as gen_error:
                         st.error(f"Error generating final image: {str(gen_error)}")
 
