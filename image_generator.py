@@ -30,43 +30,35 @@ def generate_image(pose_image, style_prompt, system_prompt):
             logger.debug(f"Input pose image saved to temporary file: {tmp_file.name}")
 
         # Prepare request parameters
-        host = "https://api.stability.ai/v2beta/stable-image/generate/sd3"
+        host = "https://api.stability.ai/v2beta/stable-image/control/sketch"
 
-        # Read and encode the image file
-        with open(tmp_file.name, "rb") as f:
-            image_data = f.read()
-
-        # Prepare multipart form data
-        files = {
-            "image": ("image.png", image_data, "image/png")
-        }
-
-        data = {
+        files = {}
+        params = {
             "prompt": style_prompt,
             "negative_prompt": "",
-            "aspect_ratio": "1:1",
+            "control_strength": 0.7,
             "seed": 0,
             "output_format": "png",
-            "model": "sd3.5-large",
-            "mode": "image-to-image",
-            "image_strength": 0.35,  # Added for image-to-image mode
-            "num_inference_steps": 30,
-            "guidance_scale": 7.5
+            "image": tmp_file.name
         }
 
         logger.debug("Sending request to Stability AI API")
 
-        # Send request
+        # Send generation request
         headers = {
             "Accept": "image/*",
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
+        if params.get("image", None) is not None:
+            files["image"] = open(params["image"], "rb")
+            params.pop("image")
+
         response = requests.post(
             host,
             headers=headers,
             files=files,
-            data=data
+            data=params
         )
 
         if not response.ok:
