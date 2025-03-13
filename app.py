@@ -354,16 +354,26 @@ Priority: Accuracy of pose over visual aesthetics"""
                     """, unsafe_allow_html=True)
                     try:
                         # First generate realistic photo
-                        style_prompt = f"""System Instructions: CRITICAL - This is a pose-to-image generation task.
+                        style_prompt = f"""System Instructions: CRITICAL - This is a bone-based pose generation.
 
-PHASE 1 - EXACT POSE REPLICATION:
-1. Input Analysis:
-- This is a BONE STRUCTURE / SKELETON diagram
-- Each green line = precise bone position
-- Each joint = exact positioning point
-- This structure dictates the EXACT pose required
+PHASE 1 - BONE STRUCTURE ANALYSIS:
+1. Understanding Each Bone Component:
+- Head-Neck Line: Defines head tilt and orientation
+- Spine Line: Central vertical structure from neck to hips
+- Shoulder Lines: Horizontal bones connecting shoulders
+- Upper Arms: Bones from shoulders to elbows
+- Lower Arms: Bones from elbows to wrists
+- Hip Line: Horizontal structure at pelvis
+- Upper Legs: Bones from hips to knees
+- Lower Legs: Bones from knees to ankles
 
-2. Joint-by-Joint Positioning (CRITICAL - MATCH EXACTLY):
+2. Spatial Relationships:
+- Each green line represents a specific bone
+- Each connection point is a joint
+- Lines show exact bone angles and lengths
+- Structure defines full 3D pose position
+
+3. Exact Joint Positions:
 Upper Body:
 - Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
 - Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
@@ -373,68 +383,65 @@ Lower Body:
 - Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
 - Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-3. Initial Creation Rules:
-- Create realistic human photograph
-- Follow bone structure with 100% accuracy
-- Match every joint angle precisely
-- Keep exact limb proportions
+4. Creation Process:
+a) First map exact bone structure
+b) Build muscles and body mass around bones
+c) Add skin and features while maintaining structure
+d) Ensure anatomical accuracy
+
+Technical Requirements:
+- Photorealistic quality
+- Follow exact bone positions
+- Match all joint angles precisely
+- Keep proper anatomical proportions
 - Maintain center of gravity
-- Preserve weight distribution
+- Natural photography lighting
+- Clean, neutral background
 
-4. Technical Requirements:
-- Use photorealistic rendering
-- Professional photo quality
-- High detail and resolution
-- Natural lighting and shadows
-- Indoor environment setting
-- Clean, simple background
-- Sharp focus throughout
-
-ABSOLUTE REQUIREMENTS:
-- NO deviation from bone structure
-- NO artistic interpretation of pose
-- NO adjustment of joint angles
-- EXACT match to reference required
-- Precise anatomical accuracy
+CRITICAL RULES:
+- Each bone must be precisely positioned
+- Joint angles must match exactly
+- No artistic interpretation of structure
+- Maintain anatomical accuracy
+- Keep all spatial relationships
 
 masterpiece, best quality, highly detailed realistic photograph"""
 
                         photo_image = generate_image(
                             pose_image,
                             style_prompt,
-                            "Create exact photorealistic match to bone structure, no artistic interpretation allowed"
+                            "Create exact anatomical match to bone structure, precise joint positioning required"
                         )
 
                         if photo_image is not None:
                             # Convert photo to anime style
-                            anime_prompt = """Convert to high quality anime style while preserving exact pose:
+                            anime_prompt = """Convert to anime style while maintaining exact bone structure:
 
-CRITICAL - Maintain Precise Pose:
-- Keep ALL joint positions exactly as shown
-- Preserve ALL body angles and proportions
-- Maintain weight distribution and balance
-- NO changes to pose or positioning
+1. Preserve Bone Framework:
+- Keep all joint positions exactly as shown
+- Maintain precise bone angles
+- Preserve body part relationships
+- Follow anatomical structure
 
-Style Application:
-- Convert to professional anime style
-- Add school uniform with pleated skirt
-- Create classroom environment
-- Apply clean lineart and shading
-- Add natural lighting
-- Keep high detail and quality
+2. Style Application (only after bone structure is matched):
+- Professional anime art style
+- School uniform with pleated skirt
+- Natural classroom lighting
+- Clean lineart and shading
+- Detailed character features
 
-Priority Order:
-1. Exact pose preservation
-2. Anatomical accuracy
-3. Style conversion
-4. Environmental details
+Priority:
+1. Bone structure accuracy
+2. Joint positioning
+3. Body proportions
+4. Style elements
 
 masterpiece, best quality, anime art style"""
 
                             final_image = generate_image(
                                 photo_image,
                                 anime_prompt,
-                                "Convert to anime while maintaining exact pose from photo"
+                                "Convert to anime while preserving exact bone structure"
                             )
 
                             if final_image is not None:
