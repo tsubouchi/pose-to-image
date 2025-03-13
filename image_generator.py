@@ -21,13 +21,15 @@ def generate_image(pose_image, style_prompt):
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         response = model.generate_content(
-            contents=[
-                "この画像の構図で日本人の女子高生をimage3で出力してください。",
-                {
-                    "mime_type": "image/png",
-                    "data": image_data
-                }
-            ]
+            contents=[{
+                "parts": [
+                    {"text": "この画像の構図で日本人の女子高生をimage3で出力してください。"},
+                    {
+                        "mime_type": "image/png",
+                        "data": image_data
+                    }
+                ]
+            }]
         )
 
         # Extract and return the generated image
