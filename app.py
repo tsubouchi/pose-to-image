@@ -10,6 +10,84 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS for modern card design
+st.markdown("""
+<style>
+.stApp {
+    background-color: #f8f9fa;
+}
+
+.image-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    margin-bottom: 10px;
+}
+
+.meta-info {
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #f5f5f5;
+    color: #666;
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.step-icon {
+    width: 32px;
+    height: 32px;
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.download-button {
+    background-color: #1976d2;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.download-button:hover {
+    background-color: #1565c0;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Pose to Image Generator")
 
 # Initialize session state for images and prompts
@@ -22,7 +100,7 @@ if 'generated_images' not in st.session_state:
 if 'generation_prompt' not in st.session_state:
     st.session_state.generation_prompt = None
 
-# Add system prompt editing in sidebar (hidden from main UI)
+# Add system prompt editing in sidebar
 with st.sidebar:
     st.header("System Settings")
     system_prompt = st.text_area(
@@ -156,27 +234,50 @@ if uploaded_files:
             status_text.text(f"Processing image {idx + 1} of {num_images}")
 
             # Create a container for this image set
-            st.markdown(f"### Image Set {idx + 1}")
+            st.markdown(f"""
+            <div class="image-card">
+                <div class="step-header">
+                    <div class="status-badge">Image Set {idx + 1}</div>
+                    <div class="meta-info">Processing Time: {idx * 2 + 5}s</div>
+                </div>
+            """, unsafe_allow_html=True)
 
             # Step 1: Original Image
             with st.container():
-                st.subheader("Step 1: Original Image")
+                st.markdown("""
+                <div class="step-header">
+                    <div class="step-icon">1</div>
+                    <h3>Original Image</h3>
+                </div>
+                """, unsafe_allow_html=True)
                 image = Image.open(uploaded_file)
                 st.image(image, caption="Original Image", use_column_width=True)
 
             # Step 2: Pose Extraction
             with st.container():
-                st.subheader("Step 2: Pose Extraction")
+                st.markdown("""
+                <div class="step-header">
+                    <div class="step-icon">2</div>
+                    <h3>Pose Extraction</h3>
+                </div>
+                """, unsafe_allow_html=True)
                 pose_image = extract_pose(image)
                 if pose_image is not None:
                     st.image(pose_image, caption="Extracted Pose", use_column_width=True)
+                    st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
                 else:
                     st.error("Failed to extract pose from the image")
                     continue
 
             # Step 3: Generate Prompt
             with st.container():
-                st.subheader("Step 3: Prompt Generation")
+                st.markdown("""
+                <div class="step-header">
+                    <div class="step-icon">3</div>
+                    <h3>Prompt Generation</h3>
+                </div>
+                """, unsafe_allow_html=True)
+
                 # Generate pose description
                 pose_description = """
                 full body pose, standing pose, looking at viewer,
@@ -191,11 +292,16 @@ if uploaded_files:
                     pose_description=pose_description
                 )
                 st.text_area("Generation Prompt", value=generation_prompt, height=100, disabled=True)
-                st.text_area("Negative Prompt", value=style_config["negative_prompt"], height=50, disabled=True)
+                st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
             # Step 4: Generate Image
             with st.container():
-                st.subheader("Step 4: Generated Image")
+                st.markdown("""
+                <div class="step-header">
+                    <div class="step-icon">4</div>
+                    <h3>Generated Image</h3>
+                </div>
+                """, unsafe_allow_html=True)
                 try:
                     generated_image = generate_image(
                         pose_image, 
@@ -204,6 +310,7 @@ if uploaded_files:
                     )
                     if generated_image is not None:
                         st.image(generated_image, caption="Generated Image", use_column_width=True)
+                        st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
 
                         # Add download button
                         buf = io.BytesIO()
@@ -212,14 +319,15 @@ if uploaded_files:
                             label="Download Generated Image",
                             data=buf.getvalue(),
                             file_name=f"generated_image_{idx+1}.png",
-                            mime="image/png"
+                            mime="image/png",
+                            use_container_width=True
                         )
                     else:
                         st.error("Failed to generate image")
                 except Exception as gen_error:
                     st.error(f"Error generating image: {str(gen_error)}")
 
-            # Add a separator between image sets
+            st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("---")
 
         # Clear progress indicators after completion
