@@ -31,9 +31,16 @@ def generate_image(pose_image, style_prompt, system_prompt):
 
         # Prepare request parameters
         host = "https://api.stability.ai/v2beta/stable-image/generate/sd3"
+
+        # Read and encode the image file
+        with open(tmp_file.name, "rb") as f:
+            image_data = f.read()
+
+        # Prepare multipart form data
         files = {
-            "image": ("image.png", open(tmp_file.name, "rb"), "image/png")
+            "image": ("image.png", image_data, "image/png")
         }
+
         data = {
             "prompt": style_prompt,
             "negative_prompt": "",
@@ -41,7 +48,10 @@ def generate_image(pose_image, style_prompt, system_prompt):
             "seed": 0,
             "output_format": "png",
             "model": "sd3.5-large",
-            "mode": "text-to-image"
+            "mode": "image-to-image",
+            "image_strength": 0.35,  # Added for image-to-image mode
+            "num_inference_steps": 30,
+            "guidance_scale": 7.5
         }
 
         logger.debug("Sending request to Stability AI API")
@@ -60,6 +70,7 @@ def generate_image(pose_image, style_prompt, system_prompt):
         )
 
         if not response.ok:
+            logger.error(f"API Response: {response.text}")
             raise Exception(f"HTTP {response.status_code}: {response.text}")
 
         # Decode response
