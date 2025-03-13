@@ -23,7 +23,6 @@ def parse_gemini_response(response_text: str) -> dict:
     Parse Gemini API response text to extract JSON content
     """
     try:
-        # Find the JSON content between curly braces
         start = response_text.find('{')
         end = response_text.rfind('}') + 1
         if start == -1 or end == 0:
@@ -32,25 +31,19 @@ def parse_gemini_response(response_text: str) -> dict:
             raise Exception("No JSON content found in response")
 
         json_content = response_text[start:end]
-
-        # Remove any markdown code block markers
         json_content = json_content.replace("```json", "").replace("```", "").strip()
 
-        # Parse and validate JSON
         result = json.loads(json_content)
 
-        # Validate required fields
         if "main_prompt" not in result or "negative_prompt" not in result:
             raise Exception("Missing required fields in response")
 
         return result
-
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {str(e)}")
         logger.error(f"Attempted to parse: {json_content}")
-        # Return default prompt as fallback
         return {
-            "main_prompt": "masterpiece, best quality, highly detailed, full body pose with exact matching",
+            "main_prompt": "masterpiece, best quality, highly detailed, maintain exact pose",
             "negative_prompt": "low quality, blurry, distorted",
             "parameters": {"cfg_scale": 7, "steps": 20}
         }
@@ -82,48 +75,48 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": """Analyze these two images for a style transfer task:
+                    "text": """Analyze these two images for an AI image generation task:
 
-1. First Image (Pose Reference Only):
-- Describe only the pose and body positioning
-- Focus on body language and gesture
-- Do not include any style or clothing details from this image
+First Image (POSE REFERENCE ONLY):
+- Focus exclusively on pose and body position
+- Describe body angles and gesture details
+- DO NOT include any style, clothing, or artistic elements from this image
 
-2. Second Image (Style and Clothing Reference):
-- Detailed clothing analysis:
+Second Image (STYLE AND CLOTHING REFERENCE):
+- Analyze complete artistic style (anime, realistic, etc)
+- Detailed clothing description:
   * All garment types and pieces
-  * Specific design elements
+  * Design details and patterns
   * Materials and textures
-  * Fit and cut details
-  * Colors and patterns
-  * Accessories
-- Style elements:
-  * Overall artistic style
-  * Visual effects
-  * Lighting and atmosphere
-  * Color scheme and mood
-  * Composition
+  * Colors and color schemes
+  * Accessories and decorative elements
+- Visual style elements:
+  * Art technique and rendering style
+  * Shading and lighting approach
+  * Color treatment and mood
+  * Background style
 
-Format the response exactly like this:
+Format response EXACTLY like this:
 {
   "pose": {
-    "body_position": "detailed pose description",
-    "gesture": "body language details",
-    "key_points": ["important pose elements"]
+    "body_position": "precise pose description",
+    "gesture": "detailed body language",
+    "angles": ["key body angles and positions"]
   },
   "reference_style": {
+    "art_style": "specific art style (anime/realistic/etc)",
     "clothing": {
-      "garments": ["detailed list of clothing items"],
+      "garments": ["detailed clothing items"],
       "design": ["specific design elements"],
-      "materials": ["fabric and texture details"],
-      "colors": ["color palette"],
+      "materials": ["fabric types and textures"],
+      "colors": ["exact color descriptions"],
       "accessories": ["all accessories"]
     },
-    "artistic": {
-      "style": "overall artistic style",
-      "lighting": "lighting description",
-      "atmosphere": "mood and ambiance",
-      "effects": ["visual effects"]
+    "visuals": {
+      "technique": "art technique description",
+      "lighting": "lighting style",
+      "color_treatment": "color grading approach",
+      "effects": ["special visual effects"]
     }
   }
 }"""
@@ -153,15 +146,7 @@ Format the response exactly like this:
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-
-        # Find the JSON content between curly braces
-        start = text_response.find('{')
-        end = text_response.rfind('}') + 1
-        if start == -1 or end == 0:
-            raise Exception("No JSON content found in response")
-
-        json_content = text_response[start:end]
-        return json.loads(json_content)
+        return json.loads(text_response)
 
     except Exception as e:
         logger.error(f"Error in Gemini analysis: {str(e)}")
@@ -181,42 +166,31 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Create a detailed Stable Diffusion prompt that recreates the exact pose from the first image 
-while applying the style and clothing from the second image.
+                    "text": f"""Create a detailed Stable Diffusion prompt that combines:
+- EXACT pose from the first image
+- Complete style and clothing from the second image
 
 Analysis result:
 {json.dumps(analysis, indent=2)}
 
-Requirements:
-1. Quality and style tags:
-   - Start with: masterpiece, best quality, highly detailed
-   - Include reference style's artistic approach
-2. Clothing description (from reference style):
-   - Exact garment details
-   - Materials and textures
-   - Colors and patterns
-   - Accessories
-3. Pose description (from pose reference):
-   - Precise body position
-   - Gesture and attitude
-4. Visual style (from reference style):
-   - Lighting and atmosphere
-   - Color grading
-   - Special effects
-5. Technical aspects:
-   - Camera angle
-   - Composition
-   - Background elements
-
-Format the response EXACTLY like this:
+Create the prompt in this EXACT format:
 {{
-  "main_prompt": "masterpiece, best quality, [clothing], [pose], [style], [effects]",
-  "negative_prompt": "wrong clothes, wrong style, poor quality, blurry, distorted",
+  "main_prompt": "masterpiece, best quality, highly detailed, (exact match of reference art style), [detailed clothing description], [precise pose description], [visual style elements]",
+  "negative_prompt": "wrong art style, inaccurate pose, different clothing style, low quality, blurry, distorted",
   "parameters": {{
     "cfg_scale": 7,
     "steps": 20
   }}
-}}"""
+}}
+
+The main_prompt must:
+1. Start with quality tags
+2. Explicitly specify the reference art style (anime/realistic/etc)
+3. Include detailed clothing description from reference
+4. Maintain exact pose from first image
+5. Include all visual style elements from reference
+
+Use professional artistic terminology and be very specific about style elements."""
                 }]
             }]
         }
@@ -233,15 +207,7 @@ Format the response EXACTLY like this:
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-
-        # Find the JSON content between curly braces
-        start = text_response.find('{')
-        end = text_response.rfind('}') + 1
-        if start == -1 or end == 0:
-            raise Exception("No JSON content found in response")
-
-        json_content = text_response[start:end]
-        return json.loads(json_content)
+        return json.loads(text_response)
 
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
@@ -250,7 +216,6 @@ Format the response EXACTLY like this:
 def generate_image_with_style(pose_image, style_image):
     """
     Generate a new image that combines the pose from pose_image with the style from style_image
-    using multi-stage LLM processing and Stability AI
     """
     try:
         # Get detailed analysis from Gemini
