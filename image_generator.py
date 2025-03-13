@@ -6,6 +6,7 @@ from PIL import Image
 import requests
 import io
 import google.generativeai as genai
+import json
 
 # Initialize logging
 logging.basicConfig(
@@ -35,30 +36,31 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
 
         # Create prompt for image analysis
         prompt = """
-        分析目的：
-        1. ポーズ画像の姿勢とポーズの詳細な分析
-        2. スタイル画像の視覚的特徴とアートスタイルの分析
+        目的：2枚の画像を分析し、1枚目のポーズを2枚目の画風で再現するための詳細情報を抽出
 
-        分析内容：
-        1. ポーズ画像について：
-        - 体の向きと姿勢
+        1. ポーズ画像の分析：
+        - 体全体の姿勢とポーズの詳細
         - 手足の位置と角度
-        - 全体的なバランス
-        - 特徴的なポーズの要素
+        - 頭の向きと表情
+        - 体の捻りや重心
+        - 特徴的なジェスチャーや動き
 
-        2. スタイル画像について：
-        - アートスタイルの特徴
-        - 色使いとトーン
-        - 線の使い方や質感
-        - 光と影の表現
-        - 独特の視覚効果
+        2. スタイル画像の分析：
+        - アートスタイルの特徴（アニメ、リアル等）
+        - 色使いとカラーパレット
+        - 線の質感と太さ
+        - シェーディングと陰影の付け方
+        - 特徴的な視覚効果
+        - 背景の処理方法
 
         出力形式：
-        以下のセクションに分けて詳細に記述してください：
-        - pose_details：ポーズの詳細な説明
-        - style_elements：スタイル要素の説明
-        - key_points：特に重要な要素のリスト
-        - generation_tips：画像生成時の重要なポイント
+        {
+          "pose_details": "ポーズの詳細な説明",
+          "style_elements": "画風の特徴",
+          "composition": "構図とフレーミング",
+          "key_points": ["重要な要素のリスト"],
+          "technical_aspects": "技術的な詳細"
+        }
         """
 
         # Get analysis from Gemini
@@ -79,33 +81,37 @@ def generate_enhanced_prompt(analysis):
     Use Gemini to generate an enhanced prompt based on the analysis
     """
     try:
-        prompt_engineering = """
+        prompt_engineering = f"""
         以下の画像分析結果を元に、Stability AIのSDXL用の最適な生成プロンプトを作成してください。
-
-        必要な要素：
-        1. メインプロンプト
-        - 正確なポーズの記述
-        - スタイル要素の詳細
-        - 画質向上のための技術的な指示
-        - 重要な視覚効果の指定
-
-        2. ネガティブプロンプト
-        - 避けるべき要素
-        - 品質低下を防ぐための指示
-
-        3. 生成パラメータ
-        - CFG Scale: 7-8の範囲
-        - Steps: 20-30の範囲
-        - Sampler: DPM++
-        - Size: 512x768
-
-        出力形式：
-        1. メインプロンプト：高品質な画像生成のための詳細な指示
-        2. ネガティブプロンプト：避けるべき要素のリスト
-        3. パラメータ：最適な生成設定
 
         分析結果：
         {analysis}
+
+        プロンプトの要件：
+        1. メインプロンプト
+        - "masterpiece, best quality" で始める
+        - ポーズの正確な記述（姿勢、手足の位置、表情）
+        - スタイル要素の詳細（画風、色調、線の特徴）
+        - 技術的な品質指定（解像度、シャープネス等）
+
+        2. ネガティブプロンプト
+        - 避けるべき要素（低品質、ブレ、歪み等）
+        - ポーズが崩れる要因の排除
+
+        3. 生成パラメータ
+        - CFG Scale: 7
+        - Steps: 20
+        - Size: 512x768
+
+        出力形式：
+        {
+          "main_prompt": "メインプロンプト",
+          "negative_prompt": "ネガティブプロンプト",
+          "parameters": {
+            "cfg_scale": 7,
+            "steps": 20
+          }
+        }
         """
 
         response = model.generate_content(prompt_engineering)
@@ -122,19 +128,29 @@ def generate_image_with_style(pose_image, style_image):
     """
     try:
         # Get detailed analysis from Gemini
+        logger.info("Analyzing images with Gemini...")
         analysis = analyze_images_with_llm(pose_image, style_image)
         if not analysis:
             raise Exception("Failed to analyze images")
 
         # Generate enhanced prompt
+        logger.info("Generating enhanced prompt...")
         prompt_data = generate_enhanced_prompt(analysis)
         if not prompt_data:
             raise Exception("Failed to generate enhanced prompt")
 
         # Parse prompt data
-        prompt_lines = prompt_data.split('\n')
-        main_prompt = next((line for line in prompt_lines if line.startswith("メインプロンプト：")), "").replace("メインプロンプト：", "")
-        negative_prompt = next((line for line in prompt_lines if line.startswith("ネガティブプロンプト：")), "").replace("ネガティブプロンプト：", "")
+        try:
+            prompt_data = json.loads(prompt_data)
+        except:
+            # Fallback if JSON parsing fails
+            logger.warning("Failed to parse JSON, using text extraction")
+            lines = prompt_data.split('\n')
+            prompt_data = {
+                "main_prompt": next((l for l in lines if "masterpiece" in l), "masterpiece, best quality"),
+                "negative_prompt": next((l for l in lines if "low quality" in l), "NSFW, low quality"),
+                "parameters": {"cfg_scale": 7, "steps": 20}
+            }
 
         # API endpoint for ultra generation
         host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
@@ -146,17 +162,17 @@ def generate_image_with_style(pose_image, style_image):
         }
 
         # Send request with enhanced parameters
+        logger.info("Sending request to Stability AI...")
         response = requests.post(
             host,
             headers=headers,
             files={"none": ""},
             data={
-                "prompt": main_prompt,
-                "negative_prompt": negative_prompt,
+                "prompt": prompt_data["main_prompt"],
+                "negative_prompt": prompt_data["negative_prompt"],
                 "output_format": "png",
-                "cfg_scale": 7,
-                "steps": 20,
-                "sampler": "DPM++",
+                "cfg_scale": prompt_data["parameters"]["cfg_scale"],
+                "steps": prompt_data["parameters"]["steps"],
                 "width": 512,
                 "height": 768,
             }
@@ -168,7 +184,7 @@ def generate_image_with_style(pose_image, style_image):
 
         # Process response
         img = Image.open(io.BytesIO(response.content))
-        logger.debug("Successfully generated styled image")
+        logger.info("Successfully generated styled image")
 
         return img
 
