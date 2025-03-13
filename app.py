@@ -37,16 +37,12 @@ st.markdown("""
     overflow-y: auto;
 }
 
-.status-section {
-    margin-bottom: 10px;
-}
-
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
     padding: 10px;
     margin-top: 10px;
-    height: 40vh;
+    height: 45vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -69,8 +65,8 @@ div[data-testid="stImage"] img {
 
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
-    max-width: 70% !important;
-    max-height: 35vh !important;
+    max-width: 90% !important;
+    max-height: 40vh !important;
     margin: 0 auto;
 }
 

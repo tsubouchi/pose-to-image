@@ -1,17 +1,13 @@
 import os
 import base64
 import logging
-import tempfile
-from PIL import Image
-import requests
 import io
 import json
+import requests
+from PIL import Image
 
 # Initialize logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # API configuration
@@ -270,7 +266,7 @@ def generate_image_with_style(pose_image, style_image):
         if not prompt_data:
             raise Exception("Failed to generate enhanced prompt")
 
-        # API endpoint for ultra generation
+        # API endpoint for generation
         host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
 
         # Prepare headers
