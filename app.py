@@ -13,12 +13,12 @@ st.set_page_config(
 st.title("Pose to Image Generator")
 
 # Initialize session state for images and prompts
-if 'original_image' not in st.session_state:
-    st.session_state.original_image = None
-if 'pose_image' not in st.session_state:
-    st.session_state.pose_image = None
-if 'generated_image' not in st.session_state:
-    st.session_state.generated_image = None
+if 'original_images' not in st.session_state:
+    st.session_state.original_images = []
+if 'pose_images' not in st.session_state:
+    st.session_state.pose_images = []
+if 'generated_images' not in st.session_state:
+    st.session_state.generated_images = []
 if 'generation_prompt' not in st.session_state:
     st.session_state.generation_prompt = None
 
@@ -125,8 +125,12 @@ low quality, jpeg artifacts, signature, watermark, blurry"""
     }
 }
 
-# Top section: Drag & Drop
-uploaded_file = st.file_uploader("Drop your image here", type=['png', 'jpg', 'jpeg'])
+# Top section: Multiple file upload
+uploaded_files = st.file_uploader(
+    "Drop your images here", 
+    type=['png', 'jpg', 'jpeg'],
+    accept_multiple_files=True
+)
 
 # Style selection
 selected_style = st.selectbox(
@@ -134,28 +138,33 @@ selected_style = st.selectbox(
     list(styles.keys())
 )
 
-# Create four columns for the images
-col1, col2, col3, col4 = st.columns(4)
-
-if uploaded_file is not None:
+# Process uploaded images
+if uploaded_files:
     try:
-        # Step 1: Display original image
-        with col1:
-            st.header("Step 1: Original Image")
+        # Create a container for the progress bar
+        progress_container = st.container()
+        with progress_container:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+        # Create columns for displaying images
+        num_images = len(uploaded_files)
+        cols = st.columns(min(4, num_images))  # Maximum 4 columns
+
+        processed_images = []
+        for idx, uploaded_file in enumerate(uploaded_files):
+            # Update progress
+            progress = (idx + 1) / num_images
+            progress_bar.progress(progress)
+            status_text.text(f"Processing image {idx + 1} of {num_images}")
+
+            # Step 1: Original Image
             image = Image.open(uploaded_file)
-            st.session_state.original_image = image
-            st.image(image, caption="Original Image")
 
-        # Step 2: Extract and display pose
-        with col2:
-            st.header("Step 2: Pose Extraction")
+            # Step 2: Extract and display pose
             pose_image = extract_pose(image)
-            st.session_state.pose_image = pose_image
-            st.image(pose_image, caption="Extracted Pose")
 
-        # Step 3: Display and edit generation prompt
-        with col3:
-            st.header("Step 3: Image Prompt")
+            # Step 3: Generate prompt and create new image
             if pose_image is not None:
                 # Generate pose description
                 pose_description = """
@@ -167,50 +176,58 @@ if uploaded_file is not None:
 
                 # Create the complete prompt using the selected style
                 style_config = styles[selected_style]
-                default_prompt = style_config["base_prompt"].format(
+                generation_prompt = style_config["base_prompt"].format(
                     pose_description=pose_description
                 )
 
-                # Make the prompt editable
-                generation_prompt = st.text_area(
-                    "Edit Image Generation Prompt",
-                    value=default_prompt if st.session_state.generation_prompt is None else st.session_state.generation_prompt,
-                    height=400
-                )
-                st.session_state.generation_prompt = generation_prompt
-
-                # Display negative prompt (read-only)
-                st.text_area(
-                    "Negative Prompt (Applied Automatically)",
-                    value=style_config["negative_prompt"],
-                    height=100,
-                    disabled=True
-                )
-
-        # Step 4: Generate and display new image
-        with col4:
-            st.header("Step 4: Generated Image")
-            if st.session_state.generation_prompt:
+                # Step 4: Generate and display new image
                 generated_image = generate_image(
                     pose_image, 
-                    st.session_state.generation_prompt,
+                    generation_prompt,
                     st.session_state.system_prompt
                 )
-                st.session_state.generated_image = generated_image
-                if generated_image is not None:
-                    st.image(generated_image, caption="Generated Image")
+
+                # Store processed images
+                processed_images.append({
+                    'original': image,
+                    'pose': pose_image,
+                    'generated': generated_image
+                })
+
+        # Clear progress bar and show completion message
+        progress_bar.empty()
+        status_text.success(f"Successfully processed {num_images} images!")
+
+        # Display all processed images in a grid
+        for idx, images in enumerate(processed_images):
+            col_idx = idx % 4
+            with cols[col_idx]:
+                st.subheader(f"Image Set {idx + 1}")
+                st.image(images['original'], caption="Original Image")
+                st.image(images['pose'], caption="Extracted Pose")
+                if images['generated'] is not None:
+                    st.image(images['generated'], caption="Generated Image")
+                    # Add download button
+                    buf = io.BytesIO()
+                    images['generated'].save(buf, format='PNG')
+                    st.download_button(
+                        label="Download Generated Image",
+                        data=buf.getvalue(),
+                        file_name=f"generated_image_{idx+1}.png",
+                        mime="image/png"
+                    )
 
     except Exception as e:
-        st.error(f"Error processing image: {str(e)}")
+        st.error(f"Error processing images: {str(e)}")
 
+# Add instructions at the bottom
 st.markdown("""
 ---
 ### How to Use:
-1. Upload an image containing a person
+1. Upload one or more images containing people
 2. Select a generation style to set the base prompt
-3. Review and customize the generation prompt:
-   - The prompt describes the desired image style and characteristics
-   - Edit the prompt to fine-tune the output
-   - The negative prompt helps avoid common issues
-4. The system will generate a new image based on your specifications
+3. Wait for all images to be processed:
+   - Each image will go through pose extraction
+   - Generated images will be created based on the extracted poses
+4. Download the generated images individually using the download buttons
 """)
