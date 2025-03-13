@@ -353,48 +353,44 @@ Priority: Accuracy of pose over visual aesthetics"""
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # Second pass: Apply anime style while preserving exact pose
-                        style_prompt = f"""CRITICAL: This is a bone/skeleton-based pose image. Follow these steps precisely:
+                        # Second pass: Generate new anime character from bone structure
+                        style_prompt = f"""System Instructions: CRITICAL - This stick figure represents a bone structure. Follow these steps to create an anime character:
 
-1. Understand Input:
-- This is a BONE STRUCTURE / SKELETON representation
-- Each green line represents a bone/joint connection
-- Joint positions are indicated by connection points
-- The structure defines exact pose positioning
+1. Analyze Bone Structure:
+- Input image shows bone/joint connections in green
+- Each line represents bone structure
+- Each connection point marks a joint position
+- This is a TECHNICAL BONE STRUCTURE, not an artistic reference
 
-2. Maintain Skeletal Structure:
-- Keep ALL bone positions and angles EXACTLY as shown:
-  * Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
-  * Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
-  * {pose_descriptions['spine_desc']}
-  * Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
-  * Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
+2. Build Character Following Bone Layout:
+Upper Body:
+- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
+- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
+- {pose_descriptions['spine_desc']}
 
-3. Create Human Form:
-- Build anatomically correct body around the skeleton
-- Preserve exact joint positions and angles
-- Maintain precise body proportions
-- Ensure natural weight distribution
+Lower Body:
+- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
+- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-4. Apply Style Elements:
-- High quality anime art style
-- School uniform (sailor style with pleated skirt)
-- Natural classroom environment
-- Professional shading and lighting
-- Clean lineart and details
+3. Character Specifications:
+- High school student
+- Wearing sailor uniform with pleated skirt
+- In classroom environment
+- Natural lighting from windows
+- Professional anime art style
 
-CRITICAL RULES:
-- Treat input as a BONE STRUCTURE
-- NO changes to skeletal positioning
-- Keep ALL joint angles exact
-- Preserve anatomical accuracy
+4. Technical Requirements:
+- Build character directly on bone structure
+- Match every joint position exactly
+- Keep proportions anatomically correct
+- Ensure weight distribution follows bone structure
 
 masterpiece, best quality, highly detailed anime illustration"""
 
                         final_image = generate_image(
-                            human_pose,
+                            pose_image,  # Use pose_image instead of human_pose
                             style_prompt,
-                            "Treat as bone structure reference, match skeleton exactly, then apply style"
+                            "Create anime character directly from bone structure, matching joints exactly"
                         )
                         if final_image is not None:
                             st.image(final_image, use_container_width=True)
