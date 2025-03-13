@@ -19,6 +19,8 @@ if 'pose_image' not in st.session_state:
     st.session_state.pose_image = None
 if 'generated_image' not in st.session_state:
     st.session_state.generated_image = None
+if 'current_prompt' not in st.session_state:
+    st.session_state.current_prompt = None
 if 'system_prompt' not in st.session_state:
     st.session_state.system_prompt = """
     CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
@@ -138,36 +140,51 @@ selected_style = st.selectbox(
     list(styles.keys())
 )
 
-# Create three columns for the images
-col1, col2, col3 = st.columns(3)
+# Create four columns for the images
+col1, col2, col3, col4 = st.columns(4)
 
 if uploaded_file is not None:
     try:
-        # Display original image
+        # Step 1: Display original image
         with col1:
-            st.header("元画像")
+            st.header("Step 1: 元画像")
             image = Image.open(uploaded_file)
             st.session_state.original_image = image
             st.image(image, caption="Original Image")
 
-        # Extract and display pose
+        # Step 2: Extract and display pose
         with col2:
-            st.header("ポーズ抽出")
+            st.header("Step 2: ポーズ抽出")
             pose_image = extract_pose(image)
             st.session_state.pose_image = pose_image
             st.image(pose_image, caption="Extracted Pose")
 
-        # Generate and display new image
+        # Step 3: Display prompt preview
         with col3:
-            st.header("生成画像")
-            generated_image = generate_image(
-                pose_image, 
-                styles[selected_style],
-                st.session_state.system_prompt
-            )
-            st.session_state.generated_image = generated_image
-            if generated_image is not None:
-                st.image(generated_image, caption="Generated Image")
+            st.header("Step 3: 生成プロンプト")
+            if pose_image is not None:
+                prompt = f"""
+                System Instructions:
+                {st.session_state.system_prompt}
+
+                Style Specifications:
+                {styles[selected_style]}
+                """
+                st.session_state.current_prompt = prompt
+                st.text_area("生成プロンプト", prompt, height=400)
+
+        # Step 4: Generate and display new image
+        with col4:
+            st.header("Step 4: 生成画像")
+            if st.session_state.current_prompt:
+                generated_image = generate_image(
+                    pose_image, 
+                    styles[selected_style],
+                    st.session_state.system_prompt
+                )
+                st.session_state.generated_image = generated_image
+                if generated_image is not None:
+                    st.image(generated_image, caption="Generated Image")
 
     except Exception as e:
         st.error(f"Error processing image: {str(e)}")
@@ -179,6 +196,6 @@ st.markdown("""
 2. 生成したいスタイルを選択
    - アニメ調: アニメやイラスト風の画像を生成
    - 実写風: 写真のような現実的な画像を生成
-3. 必要に応じてサイドバーでシステムプロンプトを調整
+3. 生成プロンプトを確認・必要に応じて調整
 4. システムが自動的にポーズを抽出し、選択したスタイルで新しい画像を生成
 """)
