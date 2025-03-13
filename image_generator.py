@@ -17,6 +17,62 @@ logger = logging.getLogger(__name__)
 # Stability API configuration
 STABILITY_KEY = os.getenv("STABILITY_KEY")
 
+def generate_controlnet_openpose(pose_image, style_prompt):
+    """
+    Generate an image using Stability AI's latest API
+    """
+    try:
+        # Save pose image to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+            pose_image.save(tmp_file.name, format='PNG')
+
+        # API endpoint for ultra generation
+        host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
+
+        headers = {
+            "Accept": "image/*",
+            "Authorization": f"Bearer {STABILITY_KEY}"
+        }
+
+        # Prepare request parameters
+        data = {
+            "prompt": style_prompt,
+            "output_format": "png",
+        }
+
+        # Send request
+        response = requests.post(
+            host,
+            headers=headers,
+            files={"none": ""},
+            data=data
+        )
+
+        if response.status_code == 404:
+            logger.error(f"API endpoint not found: {host}")
+            raise Exception("API endpoint not found. Please check the Stability AI documentation for the correct endpoint.")
+
+        if not response.ok:
+            logger.error(f"API Response: {response.text}")
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+        # Process response
+        img = Image.open(io.BytesIO(response.content))
+        logger.debug(f"Successfully generated image using ultra API")
+
+        return img
+
+    except Exception as e:
+        logger.error(f"Error in generate_controlnet_openpose: {str(e)}")
+        raise Exception(f"Failed to generate image with ControlNet: {str(e)}")
+
+    finally:
+        # Cleanup temporary files
+        try:
+            os.unlink(tmp_file.name)
+        except:
+            pass
+
 def generate_image(pose_image, style_prompt, system_prompt):
     """
     Generate a new image using Stability AI based on the pose image and style
@@ -46,7 +102,7 @@ def generate_image(pose_image, style_prompt, system_prompt):
 
         # Send generation request
         headers = {
-            "Accept": "image/*",
+            "Accept": "image/png",  # Changed from image/* to image/png
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
@@ -144,75 +200,3 @@ def generate_video(pose_sequence, style_prompt, fps=30, duration=5):
     except Exception as e:
         logger.error(f"Error in generate_video: {str(e)}")
         raise Exception(f"Failed to generate video: {str(e)}")
-
-def generate_controlnet_openpose(pose_image, style_prompt):
-    """
-    Generate an image using ControlNet OpenPose
-    """
-    try:
-        # Save pose image to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-            pose_image.save(tmp_file.name, format='PNG')
-
-        # API endpoint for image-to-image
-        host = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image"
-
-        headers = {
-            "Accept": "image/*",
-            "Authorization": f"Bearer {STABILITY_KEY}"
-        }
-
-        # Read image file
-        with open(tmp_file.name, 'rb') as img_file:
-            image_data = img_file.read()
-
-        # Prepare the files and parameters
-        files = {
-            "init_image": ('image.png', image_data, 'image/png')
-        }
-
-        params = {
-            "image_strength": 0.35,
-            "init_image_mode": "IMAGE_STRENGTH",
-            "steps": 50,
-            "seed": 0,
-            "cfg_scale": 7,
-            "samples": 1,
-            "style_preset": "anime",
-            "text_prompts[0][text]": style_prompt,
-            "text_prompts[0][weight]": 1
-        }
-
-        # Send request
-        response = requests.post(
-            host,
-            headers=headers,
-            files=files,
-            data=params
-        )
-
-        if response.status_code == 404:
-            logger.error(f"API endpoint not found: {host}")
-            raise Exception("API endpoint not found. Please check the Stability AI documentation for the correct endpoint.")
-
-        if not response.ok:
-            logger.error(f"API Response: {response.text}")
-            raise Exception(f"HTTP {response.status_code}: {response.text}")
-
-        # Process response
-        output_image = response.content
-        img = Image.open(io.BytesIO(output_image))
-        logger.debug(f"Successfully generated image using image-to-image API")
-
-        return img
-
-    except Exception as e:
-        logger.error(f"Error in generate_controlnet_openpose: {str(e)}")
-        raise Exception(f"Failed to generate image with ControlNet: {str(e)}")
-
-    finally:
-        # Cleanup temporary files
-        try:
-            os.unlink(tmp_file.name)
-        except:
-            pass
