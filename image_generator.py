@@ -16,27 +16,28 @@ def generate_image(pose_image, style_prompt):
         img_byte_arr = BytesIO()
         pose_image.save(img_byte_arr, format='PNG')
         img_bytes = img_byte_arr.getvalue()
-        image_parts = [
-            {
-                "mime_type": "image/png",
-                "data": base64.b64encode(img_bytes).decode('utf-8')
-            }
-        ]
+
+        image_data = base64.b64encode(img_bytes).decode('utf-8')
+        image_parts = {
+            "mime_type": "image/png",
+            "data": image_data
+        }
 
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         response = model.generate_content([
             style_prompt,
-            {"mime_type": "image/png", "data": base64.b64encode(img_bytes).decode('utf-8')}
+            image_parts
         ])
 
         # Extract and return the generated image
-        for part in response.parts:
-            if hasattr(part, 'inline_data'):
-                image_data = base64.b64decode(part.inline_data.data)
-                return Image.open(BytesIO(image_data))
+        if response.parts:
+            for part in response.parts:
+                if hasattr(part, 'inline_data'):
+                    image_bytes = base64.b64decode(part.inline_data.data)
+                    return Image.open(BytesIO(image_bytes))
 
-        raise ValueError("No image was generated")
+        raise ValueError("No image was generated in the response")
 
     except Exception as e:
         raise Exception(f"Failed to generate image: {str(e)}")
