@@ -31,19 +31,36 @@ def generate_image(pose_image, style_prompt, system_prompt):
 
         # Prepare request parameters
         host = "https://api.stability.ai/v2beta/stable-image/generate/sd3"
-        params = {
+        files = {
+            "image": ("image.png", open(tmp_file.name, "rb"), "image/png")
+        }
+        data = {
             "prompt": style_prompt,
             "negative_prompt": "",
             "aspect_ratio": "1:1",
             "seed": 0,
             "output_format": "png",
-            "model": "sd3.5-large"
+            "model": "sd3.5-large",
+            "mode": "text-to-image"
         }
 
         logger.debug("Sending request to Stability AI API")
 
-        # Send generation request
-        response = send_generation_request(host, params)
+        # Send request
+        headers = {
+            "Accept": "image/*",
+            "Authorization": f"Bearer {STABILITY_KEY}"
+        }
+
+        response = requests.post(
+            host,
+            headers=headers,
+            files=files,
+            data=data
+        )
+
+        if not response.ok:
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
 
         # Decode response
         output_image = response.content
@@ -72,37 +89,3 @@ def generate_image(pose_image, style_prompt, system_prompt):
                     logger.debug(f"Cleaned up temporary file: {temp_file}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temporary file {temp_file}: {cleanup_error}")
-
-def send_generation_request(host, params, files=None):
-    """Helper function to send request to Stability AI API"""
-    headers = {
-        "Accept": "image/*",
-        "Authorization": f"Bearer {STABILITY_KEY}"
-    }
-
-    if files is None:
-        files = {}
-
-    # Encode parameters
-    image = params.pop("image", None)
-    mask = params.pop("mask", None)
-    if image is not None and image != '':
-        files["image"] = open(image, 'rb')
-    if mask is not None and mask != '':
-        files["mask"] = open(mask, 'rb')
-    if len(files) == 0:
-        files["none"] = ''
-
-    # Send request
-    logger.debug(f"Sending REST request to {host}...")
-    response = requests.post(
-        host,
-        headers=headers,
-        files=files,
-        data=params
-    )
-
-    if not response.ok:
-        raise Exception(f"HTTP {response.status_code}: {response.text}")
-
-    return response
