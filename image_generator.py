@@ -20,6 +20,22 @@ STABILITY_KEY = os.getenv("STABILITY_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 
+def parse_gemini_response(response_text: str) -> dict:
+    """
+    Parse Gemini API response text to extract JSON content
+    """
+    try:
+        # Remove markdown code block markers if present
+        clean_text = response_text.replace("```json", "").replace("```", "").strip()
+
+        # Parse JSON
+        return json.loads(clean_text)
+    except Exception as e:
+        logger.error(f"Error parsing Gemini response: {str(e)}")
+        logger.error(f"Response text: {response_text}")
+        raise Exception(f"Failed to parse Gemini response: {str(e)}")
+
+
 def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
     """
     Use Gemini to analyze both images and generate detailed descriptions
@@ -45,28 +61,11 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
             "contents": [{
                 "parts":[{
                     "text": """
-                    分析目的：2枚の画像を分析し、1枚目のポーズを2枚目の画風で再現するための詳細情報を抽出
-
-                    1. ポーズ画像の分析：
-                    - 体全体の姿勢とポーズの詳細
-                    - 手足の位置と角度
-                    - 頭の向きと表情
-                    - 体の捻りや重心
-                    - 特徴的なジェスチャーや動き
-
-                    2. スタイル画像の分析：
-                    - アートスタイルの特徴（アニメ、リアル等）
-                    - 色使いとカラーパレット
-                    - 線の質感と太さ
-                    - シェーディングと陰影の付け方
-                    - 特徴的な視覚効果
-                    - 背景の処理方法
-
-                    以下の形式でJSON出力してください：
+                    2枚の画像を分析し、以下のJSONフォーマットで出力してください：
                     {
-                      "pose_details": "ポーズの詳細な説明",
-                      "style_elements": "画風の特徴",
-                      "composition": "構図とフレーミング",
+                      "pose_details": "1枚目の画像のポーズの詳細な説明",
+                      "style_elements": "2枚目の画像の画風の特徴",
+                      "composition": "構図とフレーミングの説明",
                       "key_points": ["重要な要素のリスト"],
                       "technical_aspects": "技術的な詳細"
                     }
@@ -93,11 +92,16 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
             raise Exception(f"Gemini API error: {response.status_code}")
 
         result = response.json()
-        return result["candidates"][0]["content"]["parts"][0]["text"]
+        if not result.get("candidates"):
+            raise Exception("No candidates in Gemini response")
+
+        text_response = result["candidates"][0]["content"]["parts"][0]["text"]
+        return parse_gemini_response(text_response)
 
     except Exception as e:
         logger.error(f"Error in Gemini analysis: {str(e)}")
         return None
+
 
 def generate_enhanced_prompt(analysis):
     """
@@ -114,36 +118,18 @@ def generate_enhanced_prompt(analysis):
             "contents": [{
                 "parts":[{
                     "text": f"""
-                    以下の画像分析結果を元に、Stability AIのSDXL用の最適な生成プロンプトを作成してください。
-
-                    分析結果：
-                    {analysis}
-
-                    プロンプトの要件：
-                    1. メインプロンプト
-                    - "masterpiece, best quality" で始める
-                    - ポーズの正確な記述（姿勢、手足の位置、表情）
-                    - スタイル要素の詳細（画風、色調、線の特徴）
-                    - 技術的な品質指定（解像度、シャープネス等）
-
-                    2. ネガティブプロンプト
-                    - 避けるべき要素（低品質、ブレ、歪み等）
-                    - ポーズが崩れる要因の排除
-
-                    3. 生成パラメータ
-                    - CFG Scale: 7
-                    - Steps: 20
-                    - Size: 512x768
-
-                    以下の形式でJSON出力してください：
-                    {
-                      "main_prompt": "メインプロンプト",
+                    以下の分析結果を元に、画像生成用のプロンプトを以下のJSONフォーマットで出力してください：
+                    {{
+                      "main_prompt": "メインプロンプト (masterpiece, best qualityで始める)",
                       "negative_prompt": "ネガティブプロンプト",
-                      "parameters": {
+                      "parameters": {{
                         "cfg_scale": 7,
                         "steps": 20
-                      }
-                    }
+                      }}
+                    }}
+
+                    分析結果：
+                    {json.dumps(analysis, ensure_ascii=False, indent=2)}
                     """
                 }]
             }]
@@ -157,11 +143,16 @@ def generate_enhanced_prompt(analysis):
             raise Exception(f"Gemini API error: {response.status_code}")
 
         result = response.json()
-        return result["candidates"][0]["content"]["parts"][0]["text"]
+        if not result.get("candidates"):
+            raise Exception("No candidates in Gemini response")
+
+        text_response = result["candidates"][0]["content"]["parts"][0]["text"]
+        return parse_gemini_response(text_response)
 
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
         return None
+
 
 def generate_image_with_style(pose_image, style_image):
     """
