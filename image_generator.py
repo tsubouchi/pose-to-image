@@ -5,9 +5,8 @@ import tempfile
 from PIL import Image
 import requests
 import io
-from datetime import datetime
 
-# Initialize detailed logging
+# Initialize logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -16,6 +15,75 @@ logger = logging.getLogger(__name__)
 
 # Stability API configuration
 STABILITY_KEY = os.getenv("STABILITY_KEY")
+
+def generate_image_with_style(pose_image, style_image):
+    """
+    Generate a new image that combines the pose from pose_image with the style from style_image
+    using Stability AI's API
+    """
+    try:
+        # Save pose image to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as pose_tmp:
+            pose_image.save(pose_tmp.name, format='PNG')
+
+        # Save style image to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as style_tmp:
+            style_image.save(style_tmp.name, format='PNG')
+
+        # API endpoint for image generation
+        host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
+
+        # Prepare headers
+        headers = {
+            "Accept": "image/*",
+            "Authorization": f"Bearer {STABILITY_KEY}"
+        }
+
+        # Read style image for reference
+        with open(style_tmp.name, 'rb') as style_file:
+            style_data = style_file.read()
+            style_base64 = base64.b64encode(style_data).decode('utf-8')
+
+        # Prepare the generation prompt
+        prompt = f"""Create an image that maintains the exact pose and composition from the reference image,
+        but with the artistic style, colors, and visual elements matching the style reference.
+        Ensure precise pose matching while adapting the appearance."""
+
+        # Send request
+        response = requests.post(
+            host,
+            headers=headers,
+            files={"none": ""},
+            data={
+                "prompt": prompt,
+                "output_format": "png",
+            }
+        )
+
+        if not response.ok:
+            logger.error(f"API Response: {response.text}")
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+        # Process response
+        img = Image.open(io.BytesIO(response.content))
+        logger.debug("Successfully generated styled image")
+
+        return img
+
+    except Exception as e:
+        logger.error(f"Error in generate_image_with_style: {str(e)}")
+        raise Exception(f"Failed to generate styled image: {str(e)}")
+
+    finally:
+        # Cleanup temporary files
+        try:
+            if 'pose_tmp' in locals():
+                os.unlink(pose_tmp.name)
+            if 'style_tmp' in locals():
+                os.unlink(style_tmp.name)
+        except Exception as cleanup_error:
+            logger.warning(f"Failed to cleanup temporary files: {cleanup_error}")
+
 
 def generate_controlnet_openpose(pose_image, style_prompt):
     """
@@ -72,6 +140,7 @@ def generate_controlnet_openpose(pose_image, style_prompt):
             os.unlink(tmp_file.name)
         except:
             pass
+
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -148,55 +217,3 @@ def generate_image(pose_image, style_prompt, system_prompt):
                     logger.debug(f"Cleaned up temporary file: {temp_file}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temporary file {temp_file}: {cleanup_error}")
-
-def generate_video(pose_sequence, style_prompt, fps=30, duration=5):
-    """
-    Generate a video using Stability AI based on a sequence of pose images
-    """
-    try:
-        logger.debug("Starting video generation process")
-
-        # Calculate number of frames needed
-        num_frames = fps * duration
-
-        # API endpoint for video generation
-        host = "https://api.stability.ai/v2beta/stable-video/generate"
-
-        headers = {
-            "Accept": "video/*",
-            "Authorization": f"Bearer {STABILITY_KEY}"
-        }
-
-        # Prepare request parameters
-        params = {
-            "prompt": style_prompt,
-            "fps": fps,
-            "seconds": duration,
-            "control_strength": 0.7,
-            "motion_bucket_id": 127,  # High motion value for dynamic movement
-            "seed": 0
-        }
-
-        # Send video generation request
-        response = requests.post(
-            host,
-            headers=headers,
-            json=params
-        )
-
-        if not response.ok:
-            logger.error(f"Video API Response: {response.text}")
-            raise Exception(f"HTTP {response.status_code}: {response.text}")
-
-        # Save video content
-        video_content = response.content
-
-        # Create temporary file for video
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_file:
-            tmp_file.write(video_content)
-            logger.debug(f"Generated video saved to: {tmp_file.name}")
-            return tmp_file.name
-
-    except Exception as e:
-        logger.error(f"Error in generate_video: {str(e)}")
-        raise Exception(f"Failed to generate video: {str(e)}")
