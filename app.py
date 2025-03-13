@@ -189,11 +189,12 @@ worst quality, low quality, blurry, text"""
     }
 }
 
-# File uploader
+# File uploader - ドラッグ&ドロップ機能の修正
 uploaded_files = st.file_uploader(
-    "Drop your images here", 
+    "Drop your images here",
     type=['png', 'jpg', 'jpeg'],
-    accept_multiple_files=True
+    accept_multiple_files=True,
+    key="file_uploader"  # Unique keyを追加
 )
 
 # Style selection - fixed to school uniform
@@ -217,53 +218,64 @@ if uploaded_files:
             status_text.text(f"Processing image {idx + 1} of {num_images}")
 
             # Create image set container
-            st.markdown(f"""
-            <div class="image-card">
-                <div class="step-header">
-                    <div class="status-badge">Image Set {idx + 1}</div>
-                    <div class="meta-info">Processing Time: {idx * 2 + 5}s</div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            col1, col2, col3, col4, col5 = st.columns(5)
-
-            # Step 1: Original Image
-            with col1:
-                st.markdown("""
-                <div class="step-header">
-                    <div class="step-icon">1</div>
-                    <h3>Original Image</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                image = Image.open(uploaded_file)
-                st.image(image, use_container_width=True)
-
-            # Step 2: Pose Extraction
-            with col2:
-                st.markdown("""
-                <div class="step-header">
-                    <div class="step-icon">2</div>
-                    <h3>Pose Extraction</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                pose_image, pose_descriptions = extract_pose(image)
-                if pose_image is not None:
-                    st.image(pose_image, use_container_width=True)
-                    st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
-                else:
-                    st.error("Failed to extract pose from the image")
-                    continue
-
-            # Step 3: Generation Prompt
-            with col3:
-                st.markdown("""
-                <div class="step-header">
-                    <div class="step-icon">3</div>
-                    <h3>Generation Prompt</h3>
-                </div>
+            with st.container():
+                st.markdown(f"""
+                <div class="image-card">
+                    <div class="step-header">
+                        <div class="status-badge">Image Set {idx + 1}</div>
+                        <div class="meta-info">Processing Time: {idx * 2 + 5}s</div>
+                    </div>
                 """, unsafe_allow_html=True)
 
-                generation_prompt = f"""masterpiece, best quality, highly detailed,
+                # Create columns with proper spacing
+                cols = st.columns([1, 1, 1, 1, 1])
+
+                # Step 1: Original Image
+                with cols[0]:
+                    st.markdown("""
+                    <div class="step-header">
+                        <div class="step-icon">1</div>
+                        <h3>Original Image</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    image = Image.open(uploaded_file)
+                    st.image(image, use_container_width=True)
+
+                # Step 2: Pose Extraction
+                with cols[1]:
+                    st.markdown("""
+                    <div class="step-header">
+                        <div class="step-icon">2</div>
+                        <h3>Pose Extraction</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    try:
+                        pose_image, pose_descriptions = extract_pose(image)
+                        if pose_image is not None:
+                            st.image(pose_image, use_container_width=True)
+                            st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
+                        else:
+                            st.error("Error in pose extraction, using default pose")
+                            pose_image = Image.new('RGB', (100,100)) #placeholder image
+                            pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
+
+                    except Exception as e:
+                        st.error("Error in pose extraction, using default pose")
+                        pose_image = Image.new('RGB', (100,100)) #placeholder image
+                        pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
+                        continue
+
+                # Step 3: Generation Prompt
+                with cols[2]:
+                    st.markdown("""
+                    <div class="step-header">
+                        <div class="step-icon">3</div>
+                        <h3>Generation Prompt</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Format the prompt with pose descriptions
+                    generation_prompt = f"""masterpiece, best quality, highly detailed,
 
 Body Parts Position Description:
 1. Upper Body:
@@ -283,53 +295,52 @@ Style Elements:
 - clear facial features and detailed eyes
 - clean lineart and professional shading
 """
+                    st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
+                    st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
-                st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
-                st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
-
-            # Step 4: Pose to Human
-            with col4:
-                st.markdown("""
-                <div class="step-header">
-                    <div class="step-icon">4</div>
-                    <h3>Pose to Human</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                try:
-                    # First pass: Convert stick figure to basic human form
-                    human_form_prompt = f"""Convert stick figure to realistic human form while preserving exact pose:
+                # Step 4: Pose to Human
+                with cols[3]:
+                    st.markdown("""
+                    <div class="step-header">
+                        <div class="step-icon">4</div>
+                        <h3>Pose to Human</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    try:
+                        # First pass: Convert stick figure to basic human form
+                        human_form_prompt = f"""Convert stick figure to realistic human form while preserving exact pose:
 - Maintain all joint angles: {', '.join([f'{k}: {v}' for k,v in pose_descriptions.items()])}
 - Keep exact limb proportions and body alignment
 - Create basic human anatomical features
 - Use neutral lighting and simple background
 - Focus on pose accuracy over style"""
 
-                    human_pose = generate_image(
-                        pose_image,
-                        human_form_prompt,
-                        "A professional 3D rendered human figure, anatomically correct, exact pose matching"
-                    )
-                    if human_pose is not None:
-                        st.image(human_pose, use_container_width=True)
-                        st.markdown('<div class="tag">Human Form Generated</div>', unsafe_allow_html=True)
-                    else:
-                        st.error("Failed to convert pose to human form")
+                        human_pose = generate_image(
+                            pose_image,
+                            human_form_prompt,
+                            "A professional 3D rendered human figure, anatomically correct, exact pose matching"
+                        )
+                        if human_pose is not None:
+                            st.image(human_pose, use_container_width=True)
+                            st.markdown('<div class="tag">Human Form Generated</div>', unsafe_allow_html=True)
+                        else:
+                            st.error("Failed to convert pose to human form")
+                            continue
+                    except Exception as e:
+                        st.error(f"Error in pose to human conversion: {str(e)}")
                         continue
-                except Exception as e:
-                    st.error(f"Error in pose to human conversion: {str(e)}")
-                    continue
 
-            # Step 5: Final Style Generation
-            with col5:
-                st.markdown("""
-                <div class="step-header">
-                    <div class="step-icon">5</div>
-                    <h3>Final Image</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                try:
-                    # Second pass: Apply anime style while maintaining pose
-                    style_prompt = f"""masterpiece, best quality, highly detailed anime illustration,
+                # Step 5: Final Style Generation
+                with cols[4]:
+                    st.markdown("""
+                    <div class="step-header">
+                        <div class="step-icon">5</div>
+                        <h3>Final Image</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    try:
+                        # Second pass: Apply anime style while maintaining pose
+                        style_prompt = f"""masterpiece, best quality, highly detailed anime illustration,
 {generation_prompt}
 
 Critical Requirements:
@@ -338,31 +349,31 @@ Critical Requirements:
 - Apply anime style and school uniform
 - Ensure high quality and professional finish"""
 
-                    final_image = generate_image(
-                        human_pose,
-                        style_prompt,
-                        "Maintain exact pose while applying anime style and school uniform"
-                    )
-                    if final_image is not None:
-                        st.image(final_image, use_container_width=True)
-                        st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
-
-                        # Add download button
-                        buf = io.BytesIO()
-                        final_image.save(buf, format='PNG')
-                        st.download_button(
-                            label="Download",
-                            data=buf.getvalue(),
-                            file_name=f"generated_image_{idx+1}.png",
-                            mime="image/png",
-                            use_container_width=True
+                        final_image = generate_image(
+                            human_pose,
+                            style_prompt,
+                            "Maintain exact pose while applying anime style and school uniform"
                         )
-                    else:
-                        st.error("Failed to generate final image")
-                except Exception as gen_error:
-                    st.error(f"Error generating final image: {str(gen_error)}")
+                        if final_image is not None:
+                            st.image(final_image, use_container_width=True)
+                            st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
 
-            st.markdown("</div>", unsafe_allow_html=True)
+                            # Add download button
+                            buf = io.BytesIO()
+                            final_image.save(buf, format='PNG')
+                            st.download_button(
+                                label="Download",
+                                data=buf.getvalue(),
+                                file_name=f"generated_image_{idx+1}.png",
+                                mime="image/png",
+                                use_container_width=True
+                            )
+                        else:
+                            st.error("Failed to generate final image")
+                    except Exception as gen_error:
+                        st.error(f"Error generating final image: {str(gen_error)}")
+
+                st.markdown("</div>", unsafe_allow_html=True)
 
         # Clear progress indicators
         progress_bar.empty()
