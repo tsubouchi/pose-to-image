@@ -2,7 +2,7 @@ import streamlit as st
 import mediapipe as mp
 from PIL import Image
 import io
-from pose_extractor import extract_pose
+from pose_extractor import extract_pose, get_pose_refinement_suggestions
 from image_generator import generate_image, generate_video, generate_controlnet_openpose
 import logging
 
@@ -439,17 +439,3 @@ st.markdown("""
    - Step 5: Final Result (Image or Video)
 5. Download your generated content using the download buttons
 """)
-
-def get_pose_refinement_suggestions(pose_landmarks):
-    suggestions = {}
-    for landmark in pose_landmarks:
-        if landmark.x < 0.3:
-            suggestions["left_side"] = "Move to the right"
-        elif landmark.x > 0.7:
-            suggestions["right_side"] = "Move to the left"
-        if landmark.y < 0.3:
-            suggestions["upper_body"] = "Stand up straight"
-        elif landmark.y > 0.7:
-            suggestions["lower_body"] = "Bend your knees slightly"
-
-    return suggestions

@@ -9,6 +9,26 @@ from typing import Dict, Tuple
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def get_pose_refinement_suggestions(landmarks) -> Dict[str, str]:
+    """
+    Main function to analyze pose and provide refinement suggestions
+    """
+    try:
+        if landmarks is None:
+            return {"error": "No pose detected"}
+
+        # Get pose measurements
+        angles = calculate_joint_angles(landmarks)
+        symmetry_scores = analyze_pose_balance(landmarks)
+
+        # Generate suggestions
+        suggestions = generate_pose_suggestions(symmetry_scores, angles)
+
+        return suggestions
+    except Exception as e:
+        logger.error(f"Error in pose refinement analysis: {str(e)}")
+        return {"error": "Failed to analyze pose"}
+
 def extract_pose(pil_image) -> Tuple[Image.Image, Dict[str, str], any]:
     """
     Extract pose from image with improved error handling and detection
@@ -445,23 +465,3 @@ def generate_pose_suggestions(symmetry_scores: Dict[str, float], angles: Dict[st
     except Exception as e:
         logger.error(f"Error generating suggestions: {str(e)}")
         return {"error": "Unable to generate pose suggestions"}
-
-def get_pose_refinement_suggestions(landmarks) -> Dict[str, str]:
-    """
-    Main function to analyze pose and provide refinement suggestions
-    """
-    try:
-        if landmarks is None:
-            return {"error": "No pose detected"}
-
-        # Get pose measurements
-        angles = calculate_joint_angles(landmarks)
-        symmetry_scores = analyze_pose_balance(landmarks)
-
-        # Generate suggestions
-        suggestions = generate_pose_suggestions(symmetry_scores, angles)
-
-        return suggestions
-    except Exception as e:
-        logger.error(f"Error in pose refinement analysis: {str(e)}")
-        return {"error": "Failed to analyze pose"}
