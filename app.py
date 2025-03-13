@@ -30,8 +30,8 @@ st.markdown("""
 .generated-result {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 5px;
+    padding: 5px;
+    margin-top: 2px;
     min-height: 300px;
     display: flex;
     flex-direction: column;
@@ -57,8 +57,10 @@ div[data-testid="stImage"] {
 
 /* コンパクトなヘッダー */
 h2 {
-    margin: 0 0 0.5rem 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
+    font-size: 1.5em !important;
+    line-height: 1.2 !important;
 }
 
 /* アップロード部分のコンパクト化 */
@@ -71,6 +73,11 @@ div[data-testid="stFileUploader"] {
     max-width: 120px !important;
     max-height: 120px !important;
     margin: 0 auto;
+}
+
+/* ダウンロードボタンの調整 */
+div[data-testid="stDownloadButton"] {
+    margin-top: 5px !important;
 }
 </style>
 """, unsafe_allow_html=True)
