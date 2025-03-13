@@ -242,59 +242,23 @@ Accuracy to reference is the highest priority.
 # Style selection options
 styles = {
     "Anime Style School Uniform": {
-        "base_prompt": """
-{pose_analysis}
-
-Style and Rendering:
-- masterpiece, best quality, highly detailed
-- anime illustration style
-- school uniform theme
-- professional digital art
-- crisp lines and clean shading
-
-Technical Details:
-- perfect lighting and shadows
-- detailed fabric textures
-- sharp focus
-- high resolution output
-- professional composition
-
-Additional Elements:
-- natural indoor lighting
-- soft ambient occlusion
-- subtle rim lighting
-- classroom environment
-- dynamic composition
-""",
+        "base_prompt": """masterpiece, best quality, highly detailed,
+{pose_description}
+anime style, school uniform, cute young student,
+classroom environment, sunny day, warm lighting,
+detailed eyes, soft shading, clean lineart,
+professional anime illustration""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit, 
 fewer digits, cropped, worst quality, low quality, normal quality, 
 jpeg artifacts, signature, watermark, username, blurry, artist name"""
     },
     "Casual Fashion (Anime Style)": {
-        "base_prompt": """
-{pose_analysis}
-
-Style and Rendering:
-- masterpiece, best quality, highly detailed
-- modern anime art style
-- casual street fashion
-- urban contemporary setting
-- professional illustration quality
-
-Technical Details:
-- perfect lighting and shadows
-- detailed clothing textures
-- sharp focus on character
-- high resolution artwork
-- dynamic composition
-
-Additional Elements:
-- natural outdoor lighting
-- soft atmospheric effects
-- urban background elements
-- street photography inspired
-- trendy fashion details
-""",
+        "base_prompt": """masterpiece, best quality, highly detailed,
+{pose_description}
+modern anime style, trendy casual fashion,
+urban environment, natural lighting,
+detailed clothing, dynamic composition,
+professional anime illustration""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit,
 fewer digits, cropped, worst quality, low quality, normal quality,
 jpeg artifacts, signature, watermark, username, blurry, artist name"""
@@ -379,47 +343,35 @@ if uploaded_files:
                 """, unsafe_allow_html=True)
 
             #Generate detailed prompt
-                def analyze_pose_and_generate_prompt(pose_image, style_config):
-                    """
-                    Analyze the pose image and generate a detailed prompt for image generation
-                    """
-                    # Pose description with comprehensive analysis
-                    pose_analysis = """
-Subject and Composition:
-- {precise pose details from stick figure}
-                    - exact limb positioning and joint angles maintained
-                    - accurate body proportions and balance points
-                    - dynamic pose with natural weight distribution
-                    - clear focal point on the character
-
-Spatial Elements:
-- centered composition with proper depth
-- maintaining exact body orientation
-- precise perspective alignment
-- clear figure-ground relationship
-
-Technical Requirements:
-- anatomically correct joint angles
+            def analyze_pose_and_generate_prompt(pose_image, style_config):
+                """
+                Generate a prompt that combines pose accuracy with the selected style
+                """
+                # Create detailed pose description based on the extracted pose
+                pose_description = """
+full body pose, precise pose matching:
+- exact joint positions and angles
+- accurate body proportions
 - natural body mechanics
 - proper weight distribution
-- accurate limb proportions
 - clear pose readability
+- centered composition
 """
 
-                    # Create the complete prompt using the selected style
-                    complete_prompt = style_config["base_prompt"].format(
-                        pose_analysis=pose_analysis
-                    )
-
-                    return complete_prompt.strip()
-
-
-                generation_prompt = analyze_pose_and_generate_prompt(
-                    pose_image, 
-                    styles[selected_style]
+                # Create the complete prompt using the selected style
+                complete_prompt = style_config["base_prompt"].format(
+                    pose_description=pose_description
                 )
-                st.text_area("Prompt", value=generation_prompt, height=100, disabled=True)
-                st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
+
+                return complete_prompt.strip()
+
+
+            generation_prompt = analyze_pose_and_generate_prompt(
+                pose_image, 
+                styles[selected_style]
+            )
+            st.text_area("Prompt", value=generation_prompt, height=100, disabled=True)
+            st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
             # Step 4: Generate Image
             with col4:
