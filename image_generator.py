@@ -4,8 +4,8 @@ import logging
 import tempfile
 from PIL import Image
 import requests
-from openai import OpenAI
 import io
+import fal
 
 # Initialize detailed logging
 logging.basicConfig(
@@ -14,12 +14,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# Initialize fal client
+fal.key = "5db59d74-127a-4240-a028-2662d88522a4:f7e522e4afbf3486f03f771446bbfe4b"
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
-    Generate a new image using DALL-E 3 based on the pose image and style
+    Generate a new image using Flux Pro 1.1 based on the pose image and style
     """
     temp_files = []
     try:
@@ -29,66 +29,42 @@ def generate_image(pose_image, style_prompt, system_prompt):
             pose_image.save(tmp_file.name, format='PNG')
             logger.debug(f"Input pose image saved to temporary file: {tmp_file.name}")
 
-        # Create detailed prompt for DALL-E
+        # Create detailed prompt for Flux
         prompt = f"""
-        System Instructions:
         {system_prompt}
-
-        Reference Image Description:
-        The provided image shows a stick figure pose that must be precisely replicated.
-        This pose represents the exact body position, angles, and proportions that should be maintained.
-
-        Key Focus Areas:
-        1. Pose Accuracy:
-        - Maintain exact joint angles and positions
-        - Keep the same body orientation and tilt
-        - Preserve limb positions and relationships
-        - Match the overall pose composition
-
-        2. Body Mechanics:
-        - Ensure natural joint articulation
-        - Maintain proper weight distribution
-        - Keep realistic body proportions
-        - Respect anatomical limitations
-
-        3. Perspective and Depth:
-        - Match the viewing angle of the stick figure
-        - Maintain correct foreshortening
-        - Preserve spatial relationships between body parts
-        - Keep consistent perspective throughout
 
         Style Specifications:
         {style_prompt}
 
-        Critical Requirements:
-        - The output MUST match the stick figure pose exactly
-        - Do not mirror or flip the pose
-        - Maintain all spatial relationships between body parts
-        - Ensure the character's gaze direction matches the pose
+        Follow these instructions precisely to create the image based on the reference pose.
         """
 
-        logger.debug("Sending request to DALL-E API")
+        logger.debug("Sending request to Flux Pro API")
 
-        # Generate image using DALL-E 3
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            n=1,
-            size="1024x1024",
-            quality="hd",
-            response_format="b64_json"
+        # Generate image using Flux Pro 1.1
+        response = fal.run(
+            'fal-ai/flux-pro:1.1-ultra',
+            {
+                'prompt': prompt,
+                'negative_prompt': 'multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers',
+                'image_url': tmp_file.name,
+                'num_inference_steps': 30,
+                'guidance_scale': 7.5,
+                'controlnet_conditioning_scale': 1.0,
+                'width': 1024,
+                'height': 1024,
+                'seed': -1,  # Random seed
+                'scheduler': 'euler_a'
+            }
         )
 
         # Process the response
-        if response.data and len(response.data) > 0:
-            image_data = response.data[0].b64_json
-            logger.debug("Successfully received image data from DALL-E")
-
+        if response and 'image' in response:
             # Save and verify the image
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
                 temp_files.append(out_file.name)
-                img_bytes = base64.b64decode(image_data)
-                out_file.write(img_bytes)
+                image_data = base64.b64decode(response['image'])
+                out_file.write(image_data)
                 logger.debug(f"Saved decoded image to: {out_file.name}")
 
                 # Verify the image can be opened
@@ -96,7 +72,7 @@ def generate_image(pose_image, style_prompt, system_prompt):
                 logger.debug(f"Successfully opened generated image: format={img.format}, size={img.size}")
                 return img
         else:
-            raise ValueError("No image data received from DALL-E")
+            raise ValueError("No image data received from Flux Pro")
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
