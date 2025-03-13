@@ -21,13 +21,9 @@ st.markdown("""
     color: #fff;
 }
 
-.upload-section {
-    margin-bottom: 0.5rem;
-}
-
 .preview-image {
-    max-width: 120px !important;
-    max-height: 120px !important;
+    max-width: 80px !important;
+    max-height: 80px !important;
     margin: 0 auto;
 }
 
@@ -36,7 +32,7 @@ st.markdown("""
     border-radius: 8px;
     padding: 10px;
     margin-top: 5px;
-    height: 65vh;
+    height: 30vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -46,7 +42,7 @@ st.markdown("""
 /* 生成結果の画像サイズ調整 */
 .generated-section div[data-testid="stImage"] img {
     max-width: 100% !important;
-    height: 60vh !important;
+    height: 25vh !important;
     object-fit: contain;
 }
 
@@ -69,6 +65,13 @@ h2 {
 div[data-testid="stFileUploader"] {
     padding: 0.25rem !important;
 }
+
+/* 入力画像のサイズ調整 */
+.upload-section div[data-testid="stImage"] img {
+    max-width: 120px !important;
+    max-height: 120px !important;
+    margin: 0 auto;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -87,7 +90,7 @@ with left_col:
     )
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image, use_container_width=False)
+        st.image(pose_image, use_container_width=False, width=120)
 
     # Style Image Upload Section
     st.markdown("#### スタイル参照画像")
@@ -98,7 +101,7 @@ with left_col:
     )
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image, use_container_width=False)
+        st.image(style_image, use_container_width=False, width=120)
 
 with right_col:
     st.markdown("## Generated Result")
@@ -125,7 +128,7 @@ with right_col:
             # Main preview area
             st.markdown('<div class="generated-section">', unsafe_allow_html=True)
             if result_image:
-                st.image(result_image)
+                st.image(result_image, width=300)
 
                 # Download button
                 buf = io.BytesIO()
