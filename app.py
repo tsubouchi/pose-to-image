@@ -354,19 +354,16 @@ Priority: Accuracy of pose over visual aesthetics"""
                     """, unsafe_allow_html=True)
                     try:
                         # First generate realistic photo
-                        style_prompt = f"""System Instructions: Generate a realistic photograph following the bone structure:
+                        style_prompt = f"""System Instructions: CRITICAL - This is a pose-to-image generation task.
 
-1. Create Realistic Human Photo:
-- Use bone structure as precise positioning guide
-- Create a realistic human photograph
-- Natural lighting and shadows
-- High quality photographic detail
-- Professional photography style
-- Indoor environment setting
-- Clean background with good depth
-- Natural skin tones and textures
+PHASE 1 - EXACT POSE REPLICATION:
+1. Input Analysis:
+- This is a BONE STRUCTURE / SKELETON diagram
+- Each green line = precise bone position
+- Each joint = exact positioning point
+- This structure dictates the EXACT pose required
 
-2. Follow Exact Bone Structure:
+2. Joint-by-Joint Positioning (CRITICAL - MATCH EXACTLY):
 Upper Body:
 - Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
 - Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
@@ -376,36 +373,68 @@ Lower Body:
 - Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
 - Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-Technical Requirements:
-- Photorealistic quality
-- Natural human proportions
-- Professional photography lighting
-- Sharp focus and clear details
-- Natural pose following bone structure
+3. Initial Creation Rules:
+- Create realistic human photograph
+- Follow bone structure with 100% accuracy
+- Match every joint angle precisely
+- Keep exact limb proportions
+- Maintain center of gravity
+- Preserve weight distribution
+
+4. Technical Requirements:
+- Use photorealistic rendering
+- Professional photo quality
+- High detail and resolution
+- Natural lighting and shadows
+- Indoor environment setting
+- Clean, simple background
+- Sharp focus throughout
+
+ABSOLUTE REQUIREMENTS:
+- NO deviation from bone structure
+- NO artistic interpretation of pose
+- NO adjustment of joint angles
+- EXACT match to reference required
+- Precise anatomical accuracy
 
 masterpiece, best quality, highly detailed realistic photograph"""
 
                         photo_image = generate_image(
                             pose_image,
                             style_prompt,
-                            "Create photorealistic human image from bone structure"
+                            "Create exact photorealistic match to bone structure, no artistic interpretation allowed"
                         )
 
                         if photo_image is not None:
                             # Convert photo to anime style
-                            anime_prompt = """Convert to high quality anime style:
-- School uniform with pleated skirt
-- Professional anime art style
-- Clean lineart and shading
-- Maintain exact pose and proportions
-- Classroom environment
-- Natural lighting
+                            anime_prompt = """Convert to high quality anime style while preserving exact pose:
+
+CRITICAL - Maintain Precise Pose:
+- Keep ALL joint positions exactly as shown
+- Preserve ALL body angles and proportions
+- Maintain weight distribution and balance
+- NO changes to pose or positioning
+
+Style Application:
+- Convert to professional anime style
+- Add school uniform with pleated skirt
+- Create classroom environment
+- Apply clean lineart and shading
+- Add natural lighting
+- Keep high detail and quality
+
+Priority Order:
+1. Exact pose preservation
+2. Anatomical accuracy
+3. Style conversion
+4. Environmental details
+
 masterpiece, best quality, anime art style"""
 
                             final_image = generate_image(
                                 photo_image,
                                 anime_prompt,
-                                "Convert realistic photo to anime style"
+                                "Convert to anime while maintaining exact pose from photo"
                             )
 
                             if final_image is not None:
