@@ -23,11 +23,37 @@ def parse_gemini_response(response_text: str) -> dict:
     Parse Gemini API response text to extract JSON content
     """
     try:
-        # Remove markdown code block markers if present
-        clean_text = response_text.replace("```json", "").replace("```", "").strip()
+        # Find the JSON content between curly braces
+        start = response_text.find('{')
+        end = response_text.rfind('}') + 1
+        if start == -1 or end == 0:
+            logger.error("No JSON content found in response")
+            logger.error(f"Full response: {response_text}")
+            raise Exception("No JSON content found in response")
 
-        # Parse JSON
-        return json.loads(clean_text)
+        json_content = response_text[start:end]
+
+        # Remove any markdown code block markers
+        json_content = json_content.replace("```json", "").replace("```", "").strip()
+
+        # Parse and validate JSON
+        result = json.loads(json_content)
+
+        # Validate required fields
+        if "main_prompt" not in result or "negative_prompt" not in result:
+            raise Exception("Missing required fields in response")
+
+        return result
+
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing error: {str(e)}")
+        logger.error(f"Attempted to parse: {json_content}")
+        # Return default prompt as fallback
+        return {
+            "main_prompt": "masterpiece, best quality, highly detailed, full body pose with exact matching",
+            "negative_prompt": "low quality, blurry, distorted",
+            "parameters": {"cfg_scale": 7, "steps": 20}
+        }
     except Exception as e:
         logger.error(f"Error parsing Gemini response: {str(e)}")
         logger.error(f"Response text: {response_text}")
@@ -183,14 +209,14 @@ Requirements:
    - Background elements
 
 Format the response EXACTLY like this:
-{
+{{
   "main_prompt": "masterpiece, best quality, [clothing], [pose], [style], [effects]",
   "negative_prompt": "wrong clothes, wrong style, poor quality, blurry, distorted",
-  "parameters": {
+  "parameters": {{
     "cfg_scale": 7,
     "steps": 20
-  }
-}"""
+  }}
+}}"""
                 }]
             }]
         }

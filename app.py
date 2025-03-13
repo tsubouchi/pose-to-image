@@ -53,8 +53,8 @@ div[data-testid="stFileUploader"] > div > div {
 
 /* 画像サイズの調整 */
 div[data-testid="stImage"] img {
-    max-width: 33% !important;
-    max-height: auto !important;
+    max-width: 25% !important;
+    max-height: 25vh !important;
     display: block;
     margin: 0 auto;
 }
