@@ -23,25 +23,39 @@ if 'generated_image' not in st.session_state:
 # Create three columns for the images
 col1, col2, col3 = st.columns(3)
 
+# スタイル選択のオプション
+styles = {
+    "アニメ調": "Create an anime-style character image matching this pose. Use vibrant colors and dynamic composition.",
+    "水彩画風": "Create a watercolor-style illustration matching this pose. Use soft, flowing colors and subtle textures.",
+    "3Dレンダリング": "Create a 3D rendered character matching this pose. Add realistic lighting and textures.",
+    "ピクセルアート": "Create a pixel art character matching this pose. Use a retro gaming style with limited color palette.",
+}
+
 with col1:
     st.header("Original Image")
     uploaded_file = st.file_uploader("Upload an image", type=['png', 'jpg', 'jpeg'])
-    
+
+    # スタイル選択
+    selected_style = st.selectbox(
+        "生成スタイルを選択",
+        list(styles.keys())
+    )
+
     if uploaded_file is not None:
         try:
             # Display original image
             image = Image.open(uploaded_file)
             st.session_state.original_image = image
             st.image(image, caption="Original Image")
-            
+
             # Extract pose
             pose_image = extract_pose(image)
             st.session_state.pose_image = pose_image
-            
-            # Generate new image
-            generated_image = generate_image(pose_image)
+
+            # Generate new image with selected style
+            generated_image = generate_image(pose_image, styles[selected_style])
             st.session_state.generated_image = generated_image
-            
+
         except Exception as e:
             st.error(f"Error processing image: {str(e)}")
 
@@ -57,8 +71,8 @@ with col3:
 
 st.markdown("""
 ---
-### How it works:
-1. Upload an image containing a person
-2. The system will extract the pose using MediaPipe
-3. Gemini 2.0 Flash will generate a new anime-style image based on the pose
+### 使い方:
+1. 人物が写っている画像をアップロード
+2. 生成したいスタイルを選択
+3. システムが自動的にポーズを抽出し、選択したスタイルで新しい画像を生成
 """)

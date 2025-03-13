@@ -6,9 +6,9 @@ from io import BytesIO
 API_KEY = "AIzaSyDX8EkeJkVhsqK76SWz-S_euDYhV4gHGKU"
 genai.configure(api_key=API_KEY)
 
-def generate_image(pose_image):
+def generate_image(pose_image, style_prompt):
     """
-    Generate a new image using Gemini 2.0 Flash based on the pose image
+    Generate a new image using Gemini 2.0 Flash based on the pose image and style
     """
     try:
         # Convert pose image to bytes
@@ -16,16 +16,9 @@ def generate_image(pose_image):
         pose_image.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
 
-        # Prepare the prompt
-        contents = (
-            "Create an anime-style character image matching this pose. "
-            "The character should be in a dynamic pose with a bright, detailed background. "
-            "Use vibrant colors and maintain the same pose structure as shown in the reference."
-        )
-
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        response = model.generate_content([contents, img_byte_arr])
+        response = model.generate_content([style_prompt, img_byte_arr])
 
         # Extract and return the generated image
         for part in response.parts:
