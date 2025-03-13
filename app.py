@@ -27,12 +27,12 @@ st.markdown("""
     margin: 0 auto;
 }
 
-.generated-section {
-    background-color: #1a1a1a;
+.generated-result {
+    background-color: #0a0a0a;
     border-radius: 8px;
     padding: 10px;
     margin-top: 5px;
-    height: 30vh;
+    min-height: 300px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -40,9 +40,9 @@ st.markdown("""
 }
 
 /* 生成結果の画像サイズ調整 */
-.generated-section div[data-testid="stImage"] img {
+.generated-result div[data-testid="stImage"] img {
     max-width: 100% !important;
-    height: 25vh !important;
+    height: 280px !important;
     object-fit: contain;
 }
 
@@ -106,6 +106,8 @@ with left_col:
 with right_col:
     st.markdown("## Generated Result")
 
+    # Main preview area
+    st.markdown('<div class="generated-result">', unsafe_allow_html=True)
     if pose_file and style_file:
         try:
             # Status indicators side by side
@@ -125,8 +127,6 @@ with right_col:
                     if result_image:
                         status.update(label="✅ 画像の生成が完了", state="complete")
 
-            # Main preview area
-            st.markdown('<div class="generated-section">', unsafe_allow_html=True)
             if result_image:
                 st.image(result_image, width=300)
 
@@ -140,9 +140,8 @@ with right_col:
                     mime="image/png",
                     use_container_width=True
                 )
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            # Expander is placed at the bottom
+            # Pose Analysis Details
             with st.expander("🔍 ポーズ解析の詳細"):
                 if pose_descriptions:
                     st.markdown("**検出されたポーズの特徴:**")
@@ -157,6 +156,7 @@ with right_col:
             logger.error(f"Error processing images: {str(e)}")
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions at the bottom
 with st.expander("💡 使い方"):
