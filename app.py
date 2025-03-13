@@ -10,20 +10,21 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for modern card design
+# Custom CSS for modern dark mode card design
 st.markdown("""
 <style>
 .stApp {
-    background-color: #f8f9fa;
+    background-color: #060606;
+    color: #fff;
 }
 
 .image-card {
-    background-color: white;
+    background-color: #0a0a0a;
     border-radius: 10px;
     padding: 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 12px rgba(255,255,255,0.03);
     margin-bottom: 20px;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid #333;
 }
 
 .status-badge {
@@ -32,13 +33,13 @@ st.markdown("""
     border-radius: 16px;
     font-size: 12px;
     font-weight: 500;
-    background-color: #e3f2fd;
-    color: #1976d2;
+    background-color: rgba(25, 118, 210, 0.1);
+    color: #64b5f6;
     margin-bottom: 10px;
 }
 
 .meta-info {
-    color: #666;
+    color: #888;
     font-size: 12px;
     margin-bottom: 10px;
 }
@@ -48,8 +49,8 @@ st.markdown("""
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
-    background-color: #f5f5f5;
-    color: #666;
+    background-color: rgba(255,255,255,0.05);
+    color: #888;
     margin-right: 6px;
     margin-bottom: 6px;
 }
@@ -63,12 +64,13 @@ st.markdown("""
 .step-icon {
     width: 32px;
     height: 32px;
-    background-color: #f0f7ff;
+    background-color: rgba(255,255,255,0.05);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 12px;
+    color: #64b5f6;
 }
 
 .download-button {
@@ -80,10 +82,65 @@ st.markdown("""
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s;
+    width: 100%;
 }
 
 .download-button:hover {
     background-color: #1565c0;
+}
+
+/* Dark mode overrides for Streamlit elements */
+.stTextInput > div > div > input {
+    background-color: #1a1a1a;
+    color: white;
+    border-color: #333;
+}
+
+.stSelectbox > div > div > div {
+    background-color: #1a1a1a;
+    color: white;
+    border-color: #333;
+}
+
+.stTextArea > div > div > textarea {
+    background-color: #1a1a1a;
+    color: white;
+    border-color: #333;
+}
+
+/* Add grid background animation */
+.image-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.image-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 1px) 0 0 / 40px 40px;
+    pointer-events: none;
+}
+
+.image-card:hover::before {
+    background-color: rgba(255,255,255,0.02);
+}
+
+/* Error message styling */
+.stError {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #ff5252;
+    border-color: #ff5252;
+}
+
+/* Success message styling */
+.stSuccess {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #69f0ae;
+    border-color: #69f0ae;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -99,6 +156,9 @@ if 'generated_images' not in st.session_state:
     st.session_state.generated_images = []
 if 'generation_prompt' not in st.session_state:
     st.session_state.generation_prompt = None
+if 'system_prompt' not in st.session_state:
+    st.session_state.system_prompt = None
+
 
 # Add system prompt editing in sidebar
 with st.sidebar:
