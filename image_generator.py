@@ -38,15 +38,18 @@ def generate_image(pose_image, style_prompt, system_prompt):
 
         # Generate image using Flux Pro API
         payload = {
-            'prompt': style_prompt,
-            'negative_prompt': 'multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers',
-            'num_inference_steps': 30,
-            'guidance_scale': 7.5,
-            'controlnet_conditioning_scale': 1.0,
-            'image_size': '1024x1024',
-            'enable_safety_checker': False,
-            'num_images': 1,
-            'image': f"data:image/png;base64,{encoded_image}"
+            "input": {
+                "prompt": style_prompt,
+                "negative_prompt": "multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers",
+                "num_inference_steps": 30,
+                "guidance_scale": 7.5,
+                "controlnet_conditioning_scale": 1.0,
+                "image_size": "1024x1024",
+                "enable_safety_checker": False,
+                "num_images": 1,
+                "image": f"data:image/png;base64,{encoded_image}"
+            },
+            "logs": True
         }
 
         # Make the API request
@@ -80,7 +83,8 @@ def generate_image(pose_image, style_prompt, system_prompt):
             else:
                 raise ValueError("No image data received from Flux Pro")
         else:
-            raise ValueError(f"API request failed with status code {response.status_code}: {response.text}")
+            logger.error(f"API Response: {response.text}")
+            raise ValueError(f"API request failed with status code {response.status_code}")
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
