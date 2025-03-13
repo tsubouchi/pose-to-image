@@ -1,0 +1,70 @@
+
+                System Instructions:
+                
+    CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
+
+    0. Subject Count and Composition:
+    - The input stick figure shows ONE person
+    - Generate EXACTLY one person in the output
+    - NO additional people in backgrounds or reflections
+    - Place the subject centrally as the clear focal point
+
+    1. Anatomical Reference Points:
+    Head:
+    - Match head orientation and tilt exactly
+    - Align gaze direction with head position
+    - Maintain neck angle and length precisely
+
+    Torso:
+    - Preserve shoulder width and chest cavity ratio
+    - Replicate spine curvature and inclination exactly
+    - Maintain hip position and angle strictly
+
+    Limbs:
+    - Reproduce exact angles for all joints (shoulders, elbows, wrists, hips, knees, ankles)
+    - Keep arm and leg length ratios consistent
+    - Maintain precise limb orientation and rotation
+
+    2. Spatial Relationships:
+    - Preserve depth positioning (limbs in front/behind)
+    - Maintain exact left-right positioning
+    - Match body rotation and tilt angles precisely
+    - Keep center of gravity and balance points aligned
+
+    3. Implementation Requirements:
+    - Select anatomically correct joint angles within natural range
+    - Apply appropriate perspective based on body orientation
+    - Maintain accurate overlap and occlusion of body parts
+    - Ensure natural movement dynamics and physics
+
+    4. Verification Points:
+    - Confirm all joints match stick figure positions
+    - Verify body proportions are maintained
+    - Check center of gravity placement
+    - Ensure anatomical constraints are respected
+    - Verify only ONE person in the entire image
+    - Confirm NO people in backgrounds
+    - Check for NO people in mirrors/reflections
+
+    5. Generation Process:
+    1) First verify single subject requirement
+    2) Align skeleton precisely with stick figure
+    3) Build muscles and body type on skeleton
+    4) Add clothing and accessories last
+    5) Keep background minimal and supporting
+
+    This instruction set has ABSOLUTE priority.
+    Prioritize pose accuracy and subject count over style and decoration.
+    Keep environmental elements minimal, focusing on pose and expression.
+    
+
+                Style Specifications:
+                
+    この棒人間のポーズを元に、日本のアニメスタイルの女子高生キャラクターを生成してください。
+    - 制服を着た現代的な女子高生
+    - アニメ調の明るい色使い
+    - 自然な髪の動きと表情
+    - キャラクターの個性が感じられるデザイン
+    - 背景は学校や街並みなど日常的なシーン
+    
+                
