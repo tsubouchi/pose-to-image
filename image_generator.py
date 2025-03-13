@@ -190,14 +190,14 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Generate a Stable Diffusion prompt combining the pose from first image with style from second image.
+                    "text": f"""Create a detailed Stable Diffusion prompt combining the EXACT pose from first image with the COMPLETE style from second image.
 
 Analysis:
 {json.dumps(analysis, indent=2)}
 
 Return only this JSON structure:
 {{
-  "main_prompt": "masterpiece, best quality, highly detailed, (art style), [clothing], [pose], [effects]",
+  "main_prompt": "masterpiece, best quality, highly detailed, (exact art style), [detailed clothing], [precise pose], [visual effects]",
   "negative_prompt": "wrong pose, wrong style, low quality, blurry, distorted",
   "parameters": {{
     "cfg_scale": 7,
@@ -438,3 +438,5 @@ def generate_image(pose_image, style_prompt, system_prompt):
                     logger.debug(f"Cleaned up temporary file: {temp_file}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temporary file {temp_file}: {cleanup_error}")
+
+import tempfile

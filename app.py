@@ -65,7 +65,7 @@ div[data-testid="stImage"] img {
 
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
-    max-width: 90% !important;
+    max-width: 100% !important;
     max-height: 40vh !important;
     margin: 0 auto;
 }
@@ -116,36 +116,28 @@ with right_col:
     if pose_file and style_file:
         try:
             col1, col2 = st.columns(2)
+            result_image = None
 
-            # Status indicators in columns
+            # Pose Analysis
             with col1:
-                pose_status = st.status("🔍 ポーズを解析中...")
-                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                if pose_result is None:
-                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                    st.stop()
-                pose_status.update(label="✅ ポーズの解析が完了", state="complete")
+                with st.status("🔍 ポーズを解析中...") as status:
+                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                    if pose_result is None:
+                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                        st.stop()
+                    status.update(label="✅ ポーズの解析が完了", state="complete")
 
+            # Image Generation
             with col2:
-                gen_status = st.status("🎨 画像を生成中...")
-                result_image = generate_image_with_style(pose_image, style_image)
-                if result_image:
-                    gen_status.update(label="✅ 画像の生成が完了", state="complete")
-
-            # Details in expandable sections
-            with st.expander("ポーズ解析の詳細"):
-                if pose_descriptions:
-                    st.markdown("**検出されたポーズの特徴:**")
-                    for key, value in pose_descriptions.items():
-                        if not key.endswith("_desc"):
-                            continue
-                        label = key.replace("_desc", "").replace("_", " ").title()
-                        st.markdown(f"- {label}: {value}")
+                with st.status("🎨 画像を生成中...") as status:
+                    result_image = generate_image_with_style(pose_image, style_image)
+                    if result_image:
+                        status.update(label="✅ 画像の生成が完了", state="complete")
 
             # Preview Area
             st.markdown('<div class="preview-area">', unsafe_allow_html=True)
             if result_image:
-                st.image(result_image, use_container_width=False)
+                st.image(result_image, use_container_width=True)
 
                 # Download button
                 buf = io.BytesIO()
@@ -154,9 +146,20 @@ with right_col:
                     label="💾 生成された画像をダウンロード",
                     data=buf.getvalue(),
                     file_name="generated_pose.png",
-                    mime="image/png"
+                    mime="image/png",
+                    use_container_width=True
                 )
             st.markdown('</div>', unsafe_allow_html=True)
+
+            # Pose Analysis Details
+            with st.expander("🔍 ポーズ解析の詳細"):
+                if pose_descriptions:
+                    st.markdown("**検出されたポーズの特徴:**")
+                    for key, value in pose_descriptions.items():
+                        if not key.endswith("_desc"):
+                            continue
+                        label = key.replace("_desc", "").replace("_", " ").title()
+                        st.markdown(f"- {label}: {value}")
 
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
