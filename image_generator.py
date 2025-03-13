@@ -44,19 +44,34 @@ def generate_image_with_style(pose_image, style_image):
             style_data = style_file.read()
             style_base64 = base64.b64encode(style_data).decode('utf-8')
 
-        # Prepare the generation prompt
-        prompt = f"""Create an image that maintains the exact pose and composition from the reference image,
-        but with the artistic style, colors, and visual elements matching the style reference.
-        Ensure precise pose matching while adapting the appearance."""
+        # Enhanced generation prompt with detailed style parameters
+        prompt = """masterpiece, best quality, movie still, 1girl,
+        maintain exact pose from reference image,
+        (high quality, sharp focus:1.2),
+        precise pose matching,
+        professional lighting,
+        detailed features,
+        soft lighting, volumetric lighting,
+        artistic composition,
+        professional color grading"""
 
-        # Send request
+        # Negative prompt
+        negative_prompt = "NSFW, (worst quality, low quality:1.3), blurry, distorted"
+
+        # Send request with enhanced parameters
         response = requests.post(
             host,
             headers=headers,
             files={"none": ""},
             data={
                 "prompt": prompt,
+                "negative_prompt": negative_prompt,
                 "output_format": "png",
+                "cfg_scale": 7,
+                "steps": 20,
+                "sampler": "DPM++",  # Using DPM++ sampler
+                "width": 512,
+                "height": 768,
             }
         )
 
