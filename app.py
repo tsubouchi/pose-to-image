@@ -200,7 +200,6 @@ with right_col:
             if result_image is not None:
                 st.markdown('<div class="generated-result">', unsafe_allow_html=True)
                 st.image(result_image, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
 
                 # Download button
                 buf = io.BytesIO()
@@ -212,6 +211,7 @@ with right_col:
                     mime="image/png",
                     use_container_width=True
                 )
+                st.markdown('</div>', unsafe_allow_html=True)
 
             # ポーズの改善提案を表示
             with st.status("🔍 ポーズを分析中...") as status:
