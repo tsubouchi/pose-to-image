@@ -313,7 +313,7 @@ if uploaded_files:
                     <h3>Pose Extraction</h3>
                 </div>
                 """, unsafe_allow_html=True)
-                pose_image = extract_pose(image)
+                pose_image, pose_descriptions = extract_pose(image)
                 if pose_image is not None:
                     st.image(pose_image, use_container_width=True)
                     st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
@@ -331,55 +331,21 @@ if uploaded_files:
                 """, unsafe_allow_html=True)
 
             #Generate detailed prompt
-            def analyze_pose_and_generate_prompt(pose_image):
+            def analyze_pose_and_generate_prompt(pose_image, pose_descriptions):
                 """
-                Generate detailed pose description using all body parts detected by MediaPipe
+                Generate detailed pose description using calculated joint angles
                 """
                 base_prompt = """masterpiece, best quality, highly detailed,
 
 Body Parts Position Description:
-1. Head and Face:
-- head position: {head_position}
-- face direction: {face_direction}
-- neck angle: {neck_angle}
+1. Upper Body:
+- Right Arm: shoulder {right_shoulder_desc}, elbow {right_elbow_desc}
+- Left Arm: shoulder {left_shoulder_desc}, elbow {left_elbow_desc}
+- {spine_desc}
 
-2. Upper Body:
-- shoulders: {shoulder_description}
-- chest orientation: {chest_orientation}
-- spine alignment: {spine_alignment}
-- waist position: {waist_position}
-
-3. Arms:
-Right Arm:
-- shoulder joint angle: {right_shoulder_angle}
-- elbow bend: {right_elbow_bend}
-- wrist position: {right_wrist_position}
-- hand gesture: {right_hand_gesture}
-
-Left Arm:
-- shoulder joint angle: {left_shoulder_angle}
-- elbow bend: {left_elbow_bend}
-- wrist position: {left_wrist_position}
-- hand gesture: {left_hand_gesture}
-
-4. Lower Body:
-Right Leg:
-- hip joint angle: {right_hip_angle}
-- knee bend: {right_knee_bend}
-- ankle position: {right_ankle_position}
-- foot placement: {right_foot_placement}
-
-Left Leg:
-- hip joint angle: {left_hip_angle}
-- knee bend: {left_knee_bend}
-- ankle position: {left_ankle_position}
-- foot placement: {left_foot_placement}
-
-5. Overall Posture:
-- body weight distribution: {weight_distribution}
-- balance point: {balance_point}
-- pose symmetry: {pose_symmetry}
-- body rotation: {body_rotation}
+2. Lower Body:
+- Right Leg: hip {right_hip_desc}, knee {right_knee_desc}
+- Left Leg: hip {left_hip_desc}, knee {left_knee_desc}
 
 Style Elements:
 - high quality anime art style
@@ -389,56 +355,13 @@ Style Elements:
 - clear facial features and detailed eyes
 - clean lineart and professional shading
 """
-                # Example pose details (would be calculated from MediaPipe landmarks)
-                pose_details = {
-                    # Head and Face
-                    "head_position": "straight and level",
-                    "face_direction": "facing forward",
-                    "neck_angle": "vertical, natural position",
 
-                    # Upper Body
-                    "shoulder_description": "level, relaxed position",
-                    "chest_orientation": "facing forward",
-                    "spine_alignment": "natural vertical position",
-                    "waist_position": "centered and balanced",
-
-                    # Right Arm
-                    "right_shoulder_angle": "slightly raised",
-                    "right_elbow_bend": "bent at 90 degrees",
-                    "right_wrist_position": "aligned with elbow",
-                    "right_hand_gesture": "relaxed, natural position",
-
-                    # Left Arm
-                    "left_shoulder_angle": "relaxed position",
-                    "left_elbow_bend": "natural bend",
-                    "left_wrist_position": "below elbow level",
-                    "left_hand_gesture": "gentle, natural position",
-
-                    # Right Leg
-                    "right_hip_angle": "aligned with torso",
-                    "right_knee_bend": "slightly bent",
-                    "right_ankle_position": "under knee",
-                    "right_foot_placement": "flat on ground",
-
-                    # Left Leg
-                    "left_hip_angle": "natural alignment",
-                    "left_knee_bend": "relaxed bend",
-                    "left_ankle_position": "slightly forward",
-                    "left_foot_placement": "flat on ground",
-
-                    # Overall Posture
-                    "weight_distribution": "evenly balanced",
-                    "balance_point": "centered over feet",
-                    "pose_symmetry": "natural, balanced pose",
-                    "body_rotation": "facing forward"
-                }
-
-                # Format the prompt with actual pose details
-                generation_prompt = base_prompt.format(**pose_details)
+                # Format the prompt with the calculated pose descriptions
+                generation_prompt = base_prompt.format(**pose_descriptions)
 
                 return generation_prompt.strip()
 
-            generation_prompt = analyze_pose_and_generate_prompt(pose_image)
+            generation_prompt = analyze_pose_and_generate_prompt(pose_image, pose_descriptions)
             st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
             st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
