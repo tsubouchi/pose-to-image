@@ -33,7 +33,7 @@ st.markdown("""
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 10px;
-    height: 80vh;
+    height: 85vh;
     display: flex;
     flex-direction: column;
 }
@@ -41,9 +41,9 @@ st.markdown("""
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 5px;
-    margin-top: 5px;
-    height: 65vh;
+    padding: 10px;
+    margin-top: 10px;
+    height: 70vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -67,7 +67,7 @@ div[data-testid="stImage"] img {
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
     max-width: 100% !important;
-    max-height: 60vh !important;
+    max-height: 65vh !important;
     margin: 0;
 }
 

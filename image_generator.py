@@ -5,7 +5,6 @@ import io
 import json
 import requests
 from PIL import Image
-import tempfile
 
 # Initialize logging
 logging.basicConfig(level=logging.DEBUG)
@@ -240,7 +239,6 @@ Return only this JSON structure:
         except json.JSONDecodeError:
             logger.error(f"Failed to parse JSON: {json_content}")
             raise
-
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
         # Return default prompt as fallback
@@ -272,7 +270,7 @@ def generate_image_with_style(pose_image, style_image):
 
         # Prepare headers
         headers = {
-            "Accept": "image/png",
+            "Accept": "image/*",
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
