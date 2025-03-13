@@ -46,15 +46,15 @@ st.markdown("""
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    width: 100% !important;
+    width: 375px !important;
     margin: 0 !important;
 }
 
 .generated-result div[data-testid="stImage"] img {
     max-width: 100% !important;
-    height: 260px !important;
+    height: 280px !important;
     object-fit: contain !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
 }
 
 /* コンパクトなヘッダー */
@@ -127,6 +127,17 @@ div.element-container {
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* 生成結果エリアのサイズ固定 */
+div.generated-result {
+    width: 375px !important;
+    height: 280px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -182,7 +193,8 @@ with right_col:
             # 即時に画像を表示
             if result_image is not None:
                 st.markdown('<div class="generated-result">', unsafe_allow_html=True)
-                st.image(result_image, width=300, use_container_width=True)
+                st.image(result_image, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
                 # Download button
                 buf = io.BytesIO()
@@ -194,7 +206,6 @@ with right_col:
                     mime="image/png",
                     use_container_width=True
                 )
-                st.markdown('</div>', unsafe_allow_html=True)
 
             # ポーズの改善提案を表示
             with st.status("🔍 ポーズを分析中...") as status:
