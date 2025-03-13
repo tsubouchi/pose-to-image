@@ -32,9 +32,9 @@ st.markdown("""
 .generated-result {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 5px;
-    margin-top: 2px;
-    min-height: 300px;
+    padding: 2px;
+    margin-top: 1px;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -51,7 +51,7 @@ st.markdown("""
 
 .generated-result div[data-testid="stImage"] img {
     max-width: 100% !important;
-    height: 280px !important;
+    height: 260px !important;
     object-fit: contain !important;
     margin: 0 auto !important;
 }
@@ -69,8 +69,8 @@ div[data-testid="stImage"] {
 h2 {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 1.5em !important;
-    line-height: 1.2 !important;
+    font-size: 1.3em !important;
+    line-height: 1 !important;
 }
 
 /* アップロード部分のコンパクト化 */
@@ -80,7 +80,7 @@ div[data-testid="stFileUploader"] {
 
 /* ダウンロードボタンの調整 */
 div[data-testid="stDownloadButton"] {
-    margin-top: 5px !important;
+    margin-top: 2px !important;
     width: 100% !important;
     display: flex !important;
     justify-content: center !important;
@@ -88,16 +88,16 @@ div[data-testid="stDownloadButton"] {
 
 /* ステータス表示の調整 */
 div[data-testid="stStatus"] {
-    padding: 0.25rem !important;
-    margin: 0.25rem 0 !important;
+    padding: 0.15rem !important;
+    margin: 0.15rem 0 !important;
 }
 
 /* ポーズ提案セクションのスタイル */
 .pose-suggestions {
     background-color: #1a1a1a;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 10px;
+    padding: 8px;
+    margin-top: 5px;
 }
 
 .suggestion-item {
