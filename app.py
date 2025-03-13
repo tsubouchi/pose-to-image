@@ -354,41 +354,47 @@ Priority: Accuracy of pose over visual aesthetics"""
                     """, unsafe_allow_html=True)
                     try:
                         # Second pass: Apply anime style while preserving exact pose
-                        style_prompt = f"""CRITICAL: Exact pose preservation is the highest priority.
+                        style_prompt = f"""CRITICAL: This is a bone/skeleton-based pose image. Follow these steps precisely:
 
-Follow these steps in order:
-1. First, copy the EXACT pose from the reference image:
-   - Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
-   - Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
-   - {pose_descriptions['spine_desc']}
-   - Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
-   - Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
+1. Understand Input:
+- This is a BONE STRUCTURE / SKELETON representation
+- Each green line represents a bone/joint connection
+- Joint positions are indicated by connection points
+- The structure defines exact pose positioning
 
-2. Then, maintain these elements while applying style:
-   - Keep ALL joint angles unchanged
-   - Preserve ALL limb positions exactly
-   - Match ALL body proportions precisely
-   - Maintain center of gravity position
-   - Keep the same weight distribution
+2. Maintain Skeletal Structure:
+- Keep ALL bone positions and angles EXACTLY as shown:
+  * Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
+  * Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
+  * {pose_descriptions['spine_desc']}
+  * Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
+  * Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-3. Only after pose is perfect, apply:
-   - High quality anime art style
-   - School uniform (sailor style with pleated skirt)
-   - Natural classroom lighting
-   - Clean line art and professional shading
-   - Detailed character features
+3. Create Human Form:
+- Build anatomically correct body around the skeleton
+- Preserve exact joint positions and angles
+- Maintain precise body proportions
+- Ensure natural weight distribution
 
-Remember:
-- NO pose modification allowed
-- Exact pose matching is crucial
-- Style must not affect pose accuracy
+4. Apply Style Elements:
+- High quality anime art style
+- School uniform (sailor style with pleated skirt)
+- Natural classroom environment
+- Professional shading and lighting
+- Clean lineart and details
+
+CRITICAL RULES:
+- Treat input as a BONE STRUCTURE
+- NO changes to skeletal positioning
+- Keep ALL joint angles exact
+- Preserve anatomical accuracy
 
 masterpiece, best quality, highly detailed anime illustration"""
 
                         final_image = generate_image(
                             human_pose,
                             style_prompt,
-                            "Reference pose must be matched perfectly, no artistic interpretation of pose allowed"
+                            "Treat as bone structure reference, match skeleton exactly, then apply style"
                         )
                         if final_image is not None:
                             st.image(final_image, use_container_width=True)
