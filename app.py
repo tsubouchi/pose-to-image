@@ -21,9 +21,9 @@ st.markdown("""
 .image-card {
     background-color: #0a0a0a;
     border-radius: 10px;
-    padding: 20px;
+    padding: 10px;
     box-shadow: 0 2px 12px rgba(255,255,255,0.03);
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border: 1px solid #333;
 }
 
@@ -35,73 +35,68 @@ st.markdown("""
     font-weight: 500;
     background-color: rgba(25, 118, 210, 0.1);
     color: #64b5f6;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .meta-info {
     color: #888;
     font-size: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .tag {
     display: inline-block;
-    padding: 4px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
     background-color: rgba(255,255,255,0.05);
     color: #888;
-    margin-right: 6px;
-    margin-bottom: 6px;
+    margin-right: 4px;
+    margin-bottom: 4px;
 }
 
 .step-header {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
+}
+
+.step-header h3 {
+    font-size: 14px;
+    margin: 0;
 }
 
 .step-icon {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     background-color: rgba(255,255,255,0.05);
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
+    margin-right: 8px;
     color: #64b5f6;
+    font-size: 12px;
 }
 
-.download-button {
+.stButton>button {
     background-color: #1976d2;
     color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
     border: none;
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
+    font-size: 12px;
     width: 100%;
 }
 
-.download-button:hover {
+.stButton>button:hover {
     background-color: #1565c0;
 }
 
 /* Dark mode overrides for Streamlit elements */
-.stTextInput > div > div > input {
-    background-color: #1a1a1a;
-    color: white;
-    border-color: #333;
-}
-
-.stSelectbox > div > div > div {
-    background-color: #1a1a1a;
-    color: white;
-    border-color: #333;
-}
-
+.stTextInput > div > div > input,
+.stSelectbox > div > div > div,
 .stTextArea > div > div > textarea {
     background-color: #1a1a1a;
     color: white;
@@ -129,18 +124,39 @@ st.markdown("""
     background-color: rgba(255,255,255,0.02);
 }
 
-/* Error message styling */
+/* Error and success message styling */
 .stError {
     background-color: rgba(244, 67, 54, 0.1);
     color: #ff5252;
     border-color: #ff5252;
+    padding: 4px 8px;
+    font-size: 12px;
 }
 
-/* Success message styling */
 .stSuccess {
     background-color: rgba(76, 175, 80, 0.1);
     color: #69f0ae;
     border-color: #69f0ae;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Image container adjustments */
+.stImage {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.stImage > img {
+    max-height: 200px !important;
+    width: auto !important;
+    margin: 0 auto !important;
+}
+
+/* Prompt text area adjustments */
+.stTextArea textarea {
+    min-height: 100px !important;
+    font-size: 12px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -302,8 +318,10 @@ if uploaded_files:
                 </div>
             """, unsafe_allow_html=True)
 
+            col1, col2, col3, col4 = st.columns(4)
+
             # Step 1: Original Image
-            with st.container():
+            with col1:
                 st.markdown("""
                 <div class="step-header">
                     <div class="step-icon">1</div>
@@ -311,10 +329,10 @@ if uploaded_files:
                 </div>
                 """, unsafe_allow_html=True)
                 image = Image.open(uploaded_file)
-                st.image(image, caption="Original Image", use_column_width=True)
+                st.image(image, use_container_width=True)
 
             # Step 2: Pose Extraction
-            with st.container():
+            with col2:
                 st.markdown("""
                 <div class="step-header">
                     <div class="step-icon">2</div>
@@ -323,39 +341,34 @@ if uploaded_files:
                 """, unsafe_allow_html=True)
                 pose_image = extract_pose(image)
                 if pose_image is not None:
-                    st.image(pose_image, caption="Extracted Pose", use_column_width=True)
+                    st.image(pose_image, use_container_width=True)
                     st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
                 else:
                     st.error("Failed to extract pose from the image")
                     continue
 
             # Step 3: Generate Prompt
-            with st.container():
+            with col3:
                 st.markdown("""
                 <div class="step-header">
                     <div class="step-icon">3</div>
-                    <h3>Prompt Generation</h3>
+                    <h3>Generation Prompt</h3>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Generate pose description
-                pose_description = """
-                full body pose, standing pose, looking at viewer,
-                precise pose matching the reference image,
-                detailed body proportions, accurate joint positions,
-                natural body mechanics, balanced weight distribution
-                """
+                # Generate pose description and style prompt
+                pose_description = """full body pose, standing pose, looking at viewer,
+                precise pose matching the reference image"""
 
-                # Create the complete prompt using the selected style
                 style_config = styles[selected_style]
                 generation_prompt = style_config["base_prompt"].format(
                     pose_description=pose_description
                 )
-                st.text_area("Generation Prompt", value=generation_prompt, height=100, disabled=True)
+                st.text_area("Prompt", value=generation_prompt, height=100, disabled=True)
                 st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
             # Step 4: Generate Image
-            with st.container():
+            with col4:
                 st.markdown("""
                 <div class="step-header">
                     <div class="step-icon">4</div>
@@ -369,14 +382,14 @@ if uploaded_files:
                         st.session_state.system_prompt
                     )
                     if generated_image is not None:
-                        st.image(generated_image, caption="Generated Image", use_column_width=True)
+                        st.image(generated_image, use_container_width=True)
                         st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
 
                         # Add download button
                         buf = io.BytesIO()
                         generated_image.save(buf, format='PNG')
                         st.download_button(
-                            label="Download Generated Image",
+                            label="Download",
                             data=buf.getvalue(),
                             file_name=f"generated_image_{idx+1}.png",
                             mime="image/png",
@@ -388,7 +401,6 @@ if uploaded_files:
                     st.error(f"Error generating image: {str(gen_error)}")
 
             st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("---")
 
         # Clear progress indicators after completion
         progress_bar.empty()
