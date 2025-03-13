@@ -115,7 +115,7 @@ with right_col:
 
     if pose_file and style_file:
         try:
-            # ステータス表示
+            # Pose Analysis
             with st.status("🔍 ポーズを解析中...") as status:
                 pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
                 if pose_result is None:
@@ -123,27 +123,26 @@ with right_col:
                     st.stop()
                 status.update(label="✅ ポーズの解析が完了", state="complete")
 
+            result_image = None
             with st.status("🎨 画像を生成中...") as status:
                 result_image = generate_image_with_style(pose_image, style_image)
                 if result_image:
                     status.update(label="✅ 画像の生成が完了", state="complete")
+                    # 生成完了直後に画像を表示
+                    st.markdown('<div class="generated-result">', unsafe_allow_html=True)
+                    st.image(result_image, width=300)
 
-            # Main preview area
-            st.markdown('<div class="generated-result">', unsafe_allow_html=True)
-            if result_image:
-                st.image(result_image, width=300)
-
-                # Download button
-                buf = io.BytesIO()
-                result_image.save(buf, format='PNG')
-                st.download_button(
-                    label="💾 生成された画像をダウンロード",
-                    data=buf.getvalue(),
-                    file_name="generated_pose.png",
-                    mime="image/png",
-                    use_container_width=True
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
+                    # Download button
+                    buf = io.BytesIO()
+                    result_image.save(buf, format='PNG')
+                    st.download_button(
+                        label="💾 生成された画像をダウンロード",
+                        data=buf.getvalue(),
+                        file_name="generated_pose.png",
+                        mime="image/png",
+                        use_container_width=True
+                    )
+                    st.markdown('</div>', unsafe_allow_html=True)
 
             # Pose Analysis Details
             with st.expander("🔍 ポーズ解析の詳細"):
