@@ -9,6 +9,93 @@ from typing import Dict, Tuple
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def extract_pose(pil_image) -> Tuple[Image.Image, Dict[str, str], any]:
+    """
+    Extract pose from image with improved error handling and detection
+    """
+    try:
+        # Convert PIL Image to numpy array
+        image_np = np.array(pil_image)
+
+        # Initialize MediaPipe Pose with improved settings
+        mp_pose = mp.solutions.pose
+        with mp_pose.Pose(
+            static_image_mode=True,
+            model_complexity=2,  # Increased from 1 to 2 for better accuracy
+            min_detection_confidence=0.2,  # Lowered from 0.3 for better detection
+            min_tracking_confidence=0.2,  # Added for improved tracking
+            enable_segmentation=True  # Enable segmentation for better pose isolation
+        ) as pose:
+            # Process image with improved preprocessing
+            image_rgb = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+            # Enhance image contrast for better detection
+            enhanced_image = cv2.convertScaleAbs(image_rgb, alpha=1.2, beta=0)
+
+            # Process enhanced image
+            results = pose.process(enhanced_image)
+
+            if not results.pose_landmarks:
+                logger.warning("No pose landmarks detected, trying with different settings")
+                # Second attempt with different settings
+                with mp_pose.Pose(
+                    static_image_mode=True,
+                    model_complexity=2,
+                    min_detection_confidence=0.1,
+                    enable_segmentation=True
+                ) as pose2:
+                    results = pose2.process(image_rgb)
+
+                    if not results.pose_landmarks:
+                        logger.error("Failed to detect pose after multiple attempts")
+                        return None, get_default_pose_descriptions(), None
+
+            # Create visualization canvas
+            canvas = np.zeros(image_np.shape, dtype=np.uint8)
+
+            # Enhanced drawing settings
+            mp_drawing = mp.solutions.drawing_utils
+            mp_drawing.draw_landmarks(
+                canvas,
+                results.pose_landmarks,
+                mp_pose.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing.DrawingSpec(
+                    color=(50, 205, 50),
+                    thickness=4,
+                    circle_radius=4
+                ),
+                connection_drawing_spec=mp_drawing.DrawingSpec(
+                    color=(30, 144, 255),
+                    thickness=2
+                )
+            )
+
+            # Calculate angles for pose description
+            angles = calculate_joint_angles(results.pose_landmarks)
+            pose_descriptions = get_pose_description(angles)
+
+            return Image.fromarray(canvas), pose_descriptions, results
+
+    except Exception as e:
+        logger.error(f"Error in pose extraction: {str(e)}")
+        return None, get_default_pose_descriptions(), None
+
+def get_default_pose_descriptions() -> Dict[str, str]:
+    """
+    Return default pose descriptions for fallback
+    """
+    return {
+        "right_shoulder_desc": "neutral position",
+        "right_elbow_desc": "slightly bent",
+        "left_shoulder_desc": "neutral position",
+        "left_elbow_desc": "slightly bent",
+        "right_hip_desc": "neutral position",
+        "right_knee_desc": "slightly bent",
+        "left_hip_desc": "neutral position",
+        "left_knee_desc": "slightly bent",
+        "spine_desc": "spine aligned naturally"
+    }
+
 def create_basic_stick_figure(image_shape) -> np.ndarray:
     """
     Create a basic stick figure when pose detection fails
@@ -31,76 +118,6 @@ def create_basic_stick_figure(image_shape) -> np.ndarray:
         cv2.line(canvas, points[start], points[end], (50, 205, 50), 2)
 
     return canvas
-
-def get_default_pose_descriptions() -> Dict[str, str]:
-    """
-    Return default pose descriptions for fallback
-    """
-    return {
-        "right_shoulder_desc": "neutral position",
-        "right_elbow_desc": "slightly bent",
-        "left_shoulder_desc": "neutral position",
-        "left_elbow_desc": "slightly bent",
-        "right_hip_desc": "neutral position",
-        "right_knee_desc": "slightly bent",
-        "left_hip_desc": "neutral position",
-        "left_knee_desc": "slightly bent",
-        "spine_desc": "spine aligned naturally"
-    }
-
-def extract_pose(pil_image) -> Tuple[Image.Image, Dict[str, str]]:
-    """
-    Extract pose from image with improved error handling
-    """
-    try:
-        # Convert PIL Image to numpy array
-        image_np = np.array(pil_image)
-
-        # Create default stick figure and descriptions
-        default_stick = create_basic_stick_figure(image_np.shape)
-        default_descriptions = get_default_pose_descriptions()
-
-        try:
-            # Initialize MediaPipe Pose
-            mp_pose = mp.solutions.pose
-            with mp_pose.Pose(
-                static_image_mode=True,
-                model_complexity=1,
-                min_detection_confidence=0.3
-            ) as pose:
-                # Process image
-                results = pose.process(cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
-
-                if not results.pose_landmarks:
-                    logger.warning("No pose landmarks detected, using default stick figure")
-                    return Image.fromarray(default_stick), default_descriptions
-
-                # Create visualization canvas
-                canvas = np.zeros(image_np.shape, dtype=np.uint8)
-
-                # Draw pose landmarks
-                mp_drawing = mp.solutions.drawing_utils
-                mp_drawing.draw_landmarks(
-                    canvas,
-                    results.pose_landmarks,
-                    mp_pose.POSE_CONNECTIONS,
-                    landmark_drawing_spec=mp_drawing.DrawingSpec(
-                        color=(50, 205, 50), thickness=4, circle_radius=4),
-                    connection_drawing_spec=mp_drawing.DrawingSpec(
-                        color=(30, 144, 255), thickness=2)
-                )
-
-                return Image.fromarray(canvas), default_descriptions
-
-        except Exception as e:
-            logger.error(f"Error in pose processing: {str(e)}")
-            return Image.fromarray(default_stick), default_descriptions
-
-    except Exception as e:
-        logger.error(f"Error in image processing: {str(e)}")
-        # Create basic stick figure with default size
-        default_stick = create_basic_stick_figure((512, 512))
-        return Image.fromarray(default_stick), get_default_pose_descriptions()
 
 def calculate_angle(point1: np.ndarray, point2: np.ndarray, point3: np.ndarray) -> float:
     """
