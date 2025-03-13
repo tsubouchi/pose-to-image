@@ -3,45 +3,38 @@ import numpy as np
 import cv2
 from PIL import Image
 import logging
-import math
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
-# Initialize detailed logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Initialize logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def create_basic_stick_figure(image_shape) -> np.ndarray:
     """
     Create a basic stick figure when pose detection fails
     """
-    height, width = image_shape
+    height, width = image_shape[:2] if len(image_shape) > 2 else image_shape
     canvas = np.zeros((height, width, 3), dtype=np.uint8)
 
-    # Draw basic stick figure with default pose
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
-
-    # Create a basic landmark structure
-    basic_landmarks = {
-        'nose': (width//2, height//3),
-        'shoulders': (width//2, height//2),
-        'hips': (width//2, 2*height//3),
-        'knees': (width//2, 3*height//4),
-        'ankles': (width//2, 7*height//8)
+    # Define basic stick figure points
+    center_x = width // 2
+    points = {
+        'head': (center_x, height // 4),
+        'shoulder': (center_x, height // 3),
+        'hip': (center_x, height // 2),
+        'knee': (center_x, 3 * height // 4),
+        'ankle': (center_x, 7 * height // 8)
     }
 
-    # Draw basic connections
-    for start, end in [('nose', 'shoulders'), ('shoulders', 'hips'), ('hips', 'knees'), ('knees', 'ankles')]:
-        cv2.line(canvas, basic_landmarks[start], basic_landmarks[end], (50, 205, 50), 2)
+    # Draw basic stick figure
+    for start, end in [('head', 'shoulder'), ('shoulder', 'hip'), ('hip', 'knee'), ('knee', 'ankle')]:
+        cv2.line(canvas, points[start], points[end], (50, 205, 50), 2)
 
     return canvas
 
 def get_default_pose_descriptions() -> Dict[str, str]:
     """
-    Return default pose descriptions when angle calculation fails
+    Return default pose descriptions for fallback
     """
     return {
         "right_shoulder_desc": "neutral position",
@@ -57,67 +50,57 @@ def get_default_pose_descriptions() -> Dict[str, str]:
 
 def extract_pose(pil_image) -> Tuple[Image.Image, Dict[str, str]]:
     """
-    Extract pose from the input image and return both visualization and pose descriptions
+    Extract pose from image with improved error handling
     """
     try:
-        logger.debug("Starting pose extraction process")
-
         # Convert PIL Image to numpy array
         image_np = np.array(pil_image)
+
+        # Create default stick figure and descriptions
+        default_stick = create_basic_stick_figure(image_np.shape)
+        default_descriptions = get_default_pose_descriptions()
 
         try:
             # Initialize MediaPipe Pose
             mp_pose = mp.solutions.pose
             with mp_pose.Pose(
                 static_image_mode=True,
-                model_complexity=2,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5
+                model_complexity=1,
+                min_detection_confidence=0.3
             ) as pose:
-                # Process the image
+                # Process image
                 results = pose.process(cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
 
-                if results.pose_landmarks:
-                    # Calculate joint angles
-                    angles = calculate_joint_angles(results.pose_landmarks)
-                    pose_descriptions = get_pose_description(angles)
+                if not results.pose_landmarks:
+                    logger.warning("No pose landmarks detected, using default stick figure")
+                    return Image.fromarray(default_stick), default_descriptions
 
-                    # Create visualization
-                    canvas = np.zeros(image_np.shape, dtype=np.uint8)
+                # Create visualization canvas
+                canvas = np.zeros(image_np.shape, dtype=np.uint8)
 
-                    # Draw the pose landmarks
-                    mp_drawing = mp.solutions.drawing_utils
-                    mp_drawing.draw_landmarks(
-                        canvas,
-                        results.pose_landmarks,
-                        mp_pose.POSE_CONNECTIONS,
-                        landmark_drawing_spec=mp_drawing.DrawingSpec(
-                            color=(50, 205, 50), thickness=4, circle_radius=4),
-                        connection_drawing_spec=mp_drawing.DrawingSpec(
-                            color=(30, 144, 255), thickness=2)
-                    )
-                else:
-                    logger.warning("No pose landmarks detected, using basic stick figure")
-                    canvas = create_basic_stick_figure(image_np.shape)
-                    pose_descriptions = get_default_pose_descriptions()
+                # Draw pose landmarks
+                mp_drawing = mp.solutions.drawing_utils
+                mp_drawing.draw_landmarks(
+                    canvas,
+                    results.pose_landmarks,
+                    mp_pose.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing.DrawingSpec(
+                        color=(50, 205, 50), thickness=4, circle_radius=4),
+                    connection_drawing_spec=mp_drawing.DrawingSpec(
+                        color=(30, 144, 255), thickness=2)
+                )
 
-                # Convert back to PIL Image
-                pose_image = Image.fromarray(canvas)
-
-                return pose_image, pose_descriptions
+                return Image.fromarray(canvas), default_descriptions
 
         except Exception as e:
             logger.error(f"Error in pose processing: {str(e)}")
-            # Create basic stick figure as fallback
-            canvas = create_basic_stick_figure(image_np.shape)
-            pose_descriptions = get_default_pose_descriptions()
-            return Image.fromarray(canvas), pose_descriptions
+            return Image.fromarray(default_stick), default_descriptions
 
     except Exception as e:
-        logger.error(f"Error in pose extraction: {str(e)}")
-        # Return a basic stick figure with default size if everything fails
-        canvas = create_basic_stick_figure((512, 512))
-        return Image.fromarray(canvas), get_default_pose_descriptions()
+        logger.error(f"Error in image processing: {str(e)}")
+        # Create basic stick figure with default size
+        default_stick = create_basic_stick_figure((512, 512))
+        return Image.fromarray(default_stick), get_default_pose_descriptions()
 
 def calculate_angle(point1: np.ndarray, point2: np.ndarray, point3: np.ndarray) -> float:
     """
