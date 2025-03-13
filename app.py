@@ -4,6 +4,10 @@ from PIL import Image
 import io
 from pose_extractor import extract_pose
 from image_generator import generate_image, generate_video, generate_controlnet_openpose
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 st.set_page_config(
     page_title="Pose to Image/Video Generator",
@@ -225,6 +229,51 @@ if generation_mode == "Video Sequence":
 # Style selection - fixed to school uniform for now
 selected_style = "Anime Style School Uniform"
 
+def process_image(image, idx, cols):
+    """Process a single image with improved error handling."""
+    try:
+        # Step 2: Pose Extraction with improved error handling
+        pose_image, pose_descriptions, results = extract_pose(image)
+
+        if pose_image is None:
+            st.error("""
+            ポーズの検出に失敗しました。以下をお試しください：
+            - 画像の明るさやコントラストを調整
+            - 人物が画像の中心にいることを確認
+            - 人物全体が写っていることを確認
+            """)
+            return False
+
+        # Display pose image and suggestions
+        st.image(pose_image, use_container_width=True)
+        st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
+
+        if results and results.pose_landmarks:
+            suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
+
+            if suggestions:
+                st.markdown("""
+                <div class="step-header">
+                    <h4>AI Pose Suggestions</h4>
+                </div>
+                """, unsafe_allow_html=True)
+
+                for key, suggestion in suggestions.items():
+                    if key != "error":
+                        st.markdown(f"""
+                        <div class="suggestion-item">
+                            <span class="suggestion-text">🔍 {suggestion}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        return True
+
+    except Exception as e:
+        st.error(f"画像処理中にエラーが発生しました: {str(e)}")
+        logger.error(f"Error processing image: {str(e)}")
+        return False
+
+
 # Process uploaded images
 if uploaded_files:
     try:
@@ -266,48 +315,11 @@ if uploaded_files:
                     image = Image.open(uploaded_file)
                     st.image(image, use_container_width=True)
 
-                # Step 2: Pose Extraction
-                with cols[1]:
-                    st.markdown("""
-                    <div class="step-header">
-                        <div class="step-icon">2</div>
-                        <h3>Pose Extraction</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    try:
-                        pose_image, pose_descriptions, results = extract_pose(image)
-                        if pose_image is not None:
-                            st.image(pose_image, use_container_width=True)
-                            st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
+                # Step 2-5:  Use the new process_image function
+                if not process_image(image, idx, cols):
+                    continue #skip to the next image if processing failed
 
-                            # Add pose refinement suggestions
-                            if results and results.pose_landmarks:
-                                suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
-                                st.markdown("""
-                                <div class="step-header">
-                                    <h4>AI Pose Suggestions</h4>
-                                </div>
-                                """, unsafe_allow_html=True)
-
-                                for key, suggestion in suggestions.items():
-                                    if key != "error":
-                                        st.markdown(f"""
-                                        <div class="suggestion-item">
-                                            <span class="suggestion-text">🔍 {suggestion}</span>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                        else:
-                            st.error("Error in pose extraction, using default pose")
-                            pose_image = Image.new('RGB', (100,100))
-                            pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
-
-                    except Exception as e:
-                        st.error("Error in pose extraction, using default pose")
-                        pose_image = Image.new('RGB', (100,100))
-                        pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
-                        continue
-
-                # Step 3: Generation Prompt
+                # Step 3: Generation Prompt (moved here since process_image handles pose extraction)
                 with cols[2]:
                     st.markdown("""
                     <div class="step-header">
@@ -341,6 +353,7 @@ if uploaded_files:
                             continue
                     except Exception as e:
                         st.error(f"Error in OpenPose generation: {str(e)}")
+                        logger.error(f"Error in OpenPose generation: {str(e)}")
                         continue
 
                 # Step 5: Final Generation
@@ -393,6 +406,7 @@ if uploaded_files:
                                 )
                     except Exception as gen_error:
                         st.error(f"Error in final generation: {str(gen_error)}")
+                        logger.error(f"Error in final generation: {str(gen_error)}")
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -402,6 +416,7 @@ if uploaded_files:
 
     except Exception as e:
         st.error(f"Error processing images: {str(e)}")
+        logger.exception(f"Error processing images: {str(e)}")
 
 # Instructions
 st.markdown("""

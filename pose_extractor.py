@@ -17,64 +17,81 @@ def extract_pose(pil_image) -> Tuple[Image.Image, Dict[str, str], any]:
         # Convert PIL Image to numpy array
         image_np = np.array(pil_image)
 
-        # Initialize MediaPipe Pose with improved settings
+        # Enhance image preprocessing
+        # Resize if image is too large or small
+        target_size = 1024
+        h, w = image_np.shape[:2]
+        if max(h, w) > target_size:
+            scale = target_size / max(h, w)
+            image_np = cv2.resize(image_np, (int(w * scale), int(h * scale)))
+
+        # Convert color space
+        image_rgb = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+        # Image enhancement pipeline
+        enhanced_image = image_rgb.copy()
+        # 1. Contrast enhancement
+        enhanced_image = cv2.convertScaleAbs(enhanced_image, alpha=1.2, beta=10)
+        # 2. Noise reduction
+        enhanced_image = cv2.GaussianBlur(enhanced_image, (3,3), 0)
+        # 3. Sharpening
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        enhanced_image = cv2.filter2D(enhanced_image, -1, kernel)
+
+        # Initialize MediaPipe Pose with multiple detection attempts
         mp_pose = mp.solutions.pose
-        with mp_pose.Pose(
-            static_image_mode=True,
-            model_complexity=2,  # Increased from 1 to 2 for better accuracy
-            min_detection_confidence=0.2,  # Lowered from 0.3 for better detection
-            min_tracking_confidence=0.2,  # Added for improved tracking
-            enable_segmentation=True  # Enable segmentation for better pose isolation
-        ) as pose:
-            # Process image with improved preprocessing
-            image_rgb = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+        detection_attempts = [
+            # First attempt: Standard settings
+            {"model_complexity": 2, "min_detection_confidence": 0.3},
+            # Second attempt: Lower confidence threshold
+            {"model_complexity": 2, "min_detection_confidence": 0.2},
+            # Third attempt: Highest sensitivity
+            {"model_complexity": 2, "min_detection_confidence": 0.1}
+        ]
 
-            # Enhance image contrast for better detection
-            enhanced_image = cv2.convertScaleAbs(image_rgb, alpha=1.2, beta=0)
+        results = None
+        for attempt_config in detection_attempts:
+            logger.debug(f"Attempting pose detection with config: {attempt_config}")
+            with mp_pose.Pose(
+                static_image_mode=True,
+                enable_segmentation=True,
+                **attempt_config
+            ) as pose:
+                results = pose.process(enhanced_image)
+                if results.pose_landmarks:
+                    logger.debug(f"Pose detected successfully with config: {attempt_config}")
+                    break
 
-            # Process enhanced image
-            results = pose.process(enhanced_image)
+        if not results or not results.pose_landmarks:
+            logger.error("Failed to detect pose after all attempts")
+            return None, get_default_pose_descriptions(), None
 
-            if not results.pose_landmarks:
-                logger.warning("No pose landmarks detected, trying with different settings")
-                # Second attempt with different settings
-                with mp_pose.Pose(
-                    static_image_mode=True,
-                    model_complexity=2,
-                    min_detection_confidence=0.1,
-                    enable_segmentation=True
-                ) as pose2:
-                    results = pose2.process(image_rgb)
+        # Create visualization canvas
+        canvas = np.zeros(image_np.shape, dtype=np.uint8)
 
-                    if not results.pose_landmarks:
-                        logger.error("Failed to detect pose after multiple attempts")
-                        return None, get_default_pose_descriptions(), None
-
-            # Create visualization canvas
-            canvas = np.zeros(image_np.shape, dtype=np.uint8)
-
-            # Enhanced drawing settings
-            mp_drawing = mp.solutions.drawing_utils
-            mp_drawing.draw_landmarks(
-                canvas,
-                results.pose_landmarks,
-                mp_pose.POSE_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing.DrawingSpec(
-                    color=(50, 205, 50),
-                    thickness=4,
-                    circle_radius=4
-                ),
-                connection_drawing_spec=mp_drawing.DrawingSpec(
-                    color=(30, 144, 255),
-                    thickness=2
-                )
+        # Enhanced drawing settings
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing.draw_landmarks(
+            canvas,
+            results.pose_landmarks,
+            mp_pose.POSE_CONNECTIONS,
+            landmark_drawing_spec=mp_drawing.DrawingSpec(
+                color=(50, 205, 50),
+                thickness=4,
+                circle_radius=4
+            ),
+            connection_drawing_spec=mp_drawing.DrawingSpec(
+                color=(30, 144, 255),
+                thickness=2
             )
+        )
 
-            # Calculate angles for pose description
-            angles = calculate_joint_angles(results.pose_landmarks)
-            pose_descriptions = get_pose_description(angles)
+        # Calculate angles and get descriptions
+        angles = calculate_joint_angles(results.pose_landmarks)
+        pose_descriptions = get_pose_description(angles)
 
-            return Image.fromarray(canvas), pose_descriptions, results
+        logger.debug("Successfully processed pose with descriptions")
+        return Image.fromarray(canvas), pose_descriptions, results
 
     except Exception as e:
         logger.error(f"Error in pose extraction: {str(e)}")
