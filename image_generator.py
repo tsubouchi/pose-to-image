@@ -31,15 +31,38 @@ def generate_image(pose_image, style_prompt):
 
         # Create detailed prompt for DALL-E
         prompt = f"""
-        Create an anime-style character based on the following pose and style requirements:
+        Create a high-quality anime-style character illustration based on the provided pose reference.
 
-        Style details:
+        Pose and Composition:
+        - Follow the exact pose structure from the stick figure reference
+        - Maintain natural body proportions and dynamic posing
+        - Ensure anatomically correct articulation of joints and limbs
+
+        Character Style:
+        - Modern Japanese anime art style with clean lines and bold colors
+        - High attention to detail in facial features and expressions
+        - Detailed clothing with proper fabric folds and textures
+        - Dynamic hair styling with natural flow and movement
+
+        Lighting and Atmosphere:
+        - Use dramatic lighting to enhance the mood and depth
+        - Implement proper shadows and highlights
+        - Create a sense of depth with atmospheric perspective
+
+        Technical Requirements:
+        - Render in high resolution with sharp details
+        - Maintain consistent line weights
+        - Use proper color theory and shading techniques
+        - Include subtle textures and material properties
+
+        Style-specific details:
         {style_prompt}
 
-        Additional requirements:
-        - Maintain the exact pose from the reference
-        - Ensure high quality and detail in the character design
-        - Create a cohesive composition with appropriate background
+        Additional Notes:
+        - Create a cohesive and balanced composition
+        - Ensure the character stands out from the background
+        - Add subtle environmental details that complement the character
+        - Maintain professional anime production quality standards
         """
 
         logger.debug("Sending request to DALL-E API")
@@ -50,7 +73,7 @@ def generate_image(pose_image, style_prompt):
             prompt=prompt,
             n=1,
             size="1024x1024",
-            quality="standard",
+            quality="hd",
             response_format="b64_json"
         )
 
