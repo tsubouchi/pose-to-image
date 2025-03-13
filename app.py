@@ -297,10 +297,17 @@ Style Elements:
                 """, unsafe_allow_html=True)
                 try:
                     # First pass: Convert stick figure to basic human form
+                    human_form_prompt = f"""Convert stick figure to realistic human form while preserving exact pose:
+- Maintain all joint angles: {', '.join([f'{k}: {v}' for k,v in pose_descriptions.items()])}
+- Keep exact limb proportions and body alignment
+- Create basic human anatomical features
+- Use neutral lighting and simple background
+- Focus on pose accuracy over style"""
+
                     human_pose = generate_image(
                         pose_image,
-                        "Convert stick figure to human form, maintain exact pose",
-                        st.session_state.system_prompt
+                        human_form_prompt,
+                        "A professional 3D rendered human figure, anatomically correct, exact pose matching"
                     )
                     if human_pose is not None:
                         st.image(human_pose, use_container_width=True)
@@ -321,11 +328,20 @@ Style Elements:
                 </div>
                 """, unsafe_allow_html=True)
                 try:
-                    # Second pass: Apply final style to human form
+                    # Second pass: Apply anime style while maintaining pose
+                    style_prompt = f"""masterpiece, best quality, highly detailed anime illustration,
+{generation_prompt}
+
+Critical Requirements:
+- Maintain exact pose from reference image
+- Keep all joint angles and body proportions
+- Apply anime style and school uniform
+- Ensure high quality and professional finish"""
+
                     final_image = generate_image(
                         human_pose,
-                        generation_prompt,
-                        st.session_state.system_prompt
+                        style_prompt,
+                        "Maintain exact pose while applying anime style and school uniform"
                     )
                     if final_image is not None:
                         st.image(final_image, use_container_width=True)
