@@ -40,9 +40,9 @@ st.markdown("""
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 10px;
-    height: 45vh;
+    padding: 5px;
+    margin-top: 5px;
+    height: 50vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -66,8 +66,8 @@ div[data-testid="stImage"] img {
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
     max-width: 100% !important;
-    max-height: 40vh !important;
-    margin: 0 auto;
+    max-height: 45vh !important;
+    margin: 0;
 }
 
 /* ステータス表示の調整 */
@@ -112,6 +112,7 @@ with left_col:
 
 with right_col:
     st.markdown("## Generated Result")
+    st.markdown('<div class="result-section">', unsafe_allow_html=True)
 
     if pose_file and style_file:
         try:
@@ -166,6 +167,8 @@ with right_col:
             logger.error(f"Error processing images: {str(e)}")
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions
 with st.expander("💡 使い方"):
