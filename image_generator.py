@@ -1,6 +1,5 @@
 import google.generativeai as genai
 from PIL import Image
-from io import BytesIO
 import base64
 import os
 import tempfile
@@ -39,65 +38,57 @@ def generate_image(pose_image, style_prompt):
                 logger.debug(f"Image encoded to base64 (length: {len(image_data)})")
 
         # Create request contents
-        contents = [{
-            "parts": [
-                {
-                    "text": "この画像の構図で日本人の女子高生をimage3で出力して"
-                },
-                {
+        contents = {
+            "contents": [{
+                "parts":[{
+                    "text": "この棒人間のポーズに基づいて新しい画像を生成してください。以下の要素を含めてください：\n" + style_prompt
+                },{
                     "inline_data": {
                         "mime_type": "image/png",
                         "data": image_data
                     }
-                }
-            ]
-        }]
+                }]
+            }]
+        }
 
         logger.debug("Sending request to Gemini API")
         logger.debug(f"Request contents structure: {json.dumps(contents, indent=2)}")
 
         # Generate the image using Gemini
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(contents)
-        logger.debug("Received response from Gemini API")
-
-        # Log response structure
-        logger.debug(f"Response type: {type(response)}")
-        logger.debug(f"Response parts count: {len(response.parts) if hasattr(response, 'parts') else 'No parts'}")
+        logger.debug(f"Response received - Type: {type(response)}")
+        logger.debug(f"Response attributes: {dir(response)}")
 
         # Process the response
-        if response.parts:
+        if hasattr(response, 'text'):
+            logger.debug(f"Response text: {response.text}")
+
+        if hasattr(response, 'candidates'):
+            logger.debug(f"Response candidates: {response.candidates}")
+
+        image_data = None
+        if hasattr(response, 'parts'):
             for i, part in enumerate(response.parts):
-                logger.debug(f"Processing response part {i+1}")
+                logger.debug(f"Part {i} type: {type(part)}")
                 if hasattr(part, 'inline_data'):
-                    try:
-                        # Decode base64 data
-                        response_data = part.inline_data.data
-                        logger.debug(f"Response data length: {len(response_data)}")
+                    image_data = part.inline_data.data
+                    break
 
-                        image_bytes = base64.b64decode(response_data)
-                        logger.debug(f"Decoded image bytes length: {len(image_bytes)}")
+        if not image_data:
+            raise ValueError("No image data found in response")
 
-                        # Save to temporary file
-                        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
-                            temp_files.append(out_file.name)
-                            out_file.write(image_bytes)
-                            logger.debug(f"Generated image saved to: {out_file.name}")
+        # Save and verify the image
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
+            temp_files.append(out_file.name)
+            img_bytes = base64.b64decode(image_data)
+            out_file.write(img_bytes)
+            logger.debug(f"Saved decoded image to: {out_file.name}")
 
-                            # Try to open and validate the image
-                            try:
-                                generated_image = Image.open(out_file.name)
-                                logger.debug(f"Successfully opened image: format={generated_image.format}, size={generated_image.size}, mode={generated_image.mode}")
-                                return generated_image
-                            except Exception as img_error:
-                                logger.error(f"Failed to open generated image: {img_error}")
-                                raise Exception(f"Invalid image format: {img_error}")
-
-                    except Exception as decode_error:
-                        logger.error(f"Error processing generated image: {decode_error}")
-                        raise Exception(f"Failed to process generated image: {decode_error}")
-
-        raise ValueError("No image was generated in the response")
+            # Verify the image can be opened
+            img = Image.open(out_file.name)
+            logger.debug(f"Successfully opened generated image: format={img.format}, size={img.size}")
+            return img
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
