@@ -30,39 +30,57 @@ def generate_image(pose_image, style_prompt):
             logger.debug(f"Input image saved to temporary file: {tmp_file.name}")
 
         # Create detailed prompt for DALL-E
-        prompt = f"""
-        Create a high-quality anime-style character illustration based on the provided pose reference.
+        base_prompt = """
+        Create a high-quality image based on the provided pose reference.
+        The pose must exactly match the stick figure reference, maintaining precise body positioning and proportions.
 
         Pose and Composition:
         - Follow the exact pose structure from the stick figure reference
         - Maintain natural body proportions and dynamic posing
         - Ensure anatomically correct articulation of joints and limbs
-
-        Character Style:
-        - Modern Japanese anime art style with clean lines and bold colors
-        - High attention to detail in facial features and expressions
-        - Detailed clothing with proper fabric folds and textures
-        - Dynamic hair styling with natural flow and movement
-
-        Lighting and Atmosphere:
-        - Use dramatic lighting to enhance the mood and depth
-        - Implement proper shadows and highlights
-        - Create a sense of depth with atmospheric perspective
+        - Create a balanced and visually appealing composition
 
         Technical Requirements:
         - Render in high resolution with sharp details
-        - Maintain consistent line weights
-        - Use proper color theory and shading techniques
-        - Include subtle textures and material properties
+        - Use proper lighting and shadows for depth
+        - Implement accurate perspective and depth
+        - Pay attention to small details and textures
+        """
 
-        Style-specific details:
+        # Add style-specific prompt
+        if "アニメ" in style_prompt:
+            base_prompt += """
+            Anime Style Specifications:
+            - Modern Japanese anime art style with clean lines
+            - Vibrant and harmonious color palette
+            - Expressive eyes and facial features
+            - Dynamic hair styling with natural flow
+            - Detailed clothing with proper fabric folds
+            - Maintain anime-specific proportions and aesthetics
+            """
+        else:
+            base_prompt += """
+            Photorealistic Style Specifications:
+            - Highly detailed photorealistic rendering
+            - Natural skin textures and features
+            - Realistic fabric materials and textures
+            - Professional photography lighting techniques
+            - Subtle environmental reflections
+            - Natural color grading and contrast
+            """
+
+        # Combine with style-specific details
+        final_prompt = f"""
+        {base_prompt}
+
+        Style Details:
         {style_prompt}
 
-        Additional Notes:
-        - Create a cohesive and balanced composition
-        - Ensure the character stands out from the background
-        - Add subtle environmental details that complement the character
-        - Maintain professional anime production quality standards
+        Additional Requirements:
+        - Ensure the output matches the selected style perfectly
+        - Create a cohesive scene with appropriate background
+        - Add subtle environmental details that enhance the composition
+        - Maintain professional quality standards throughout
         """
 
         logger.debug("Sending request to DALL-E API")
@@ -70,7 +88,7 @@ def generate_image(pose_image, style_prompt):
         # Generate image using DALL-E 3
         response = client.images.generate(
             model="dall-e-3",
-            prompt=prompt,
+            prompt=final_prompt,
             n=1,
             size="1024x1024",
             quality="hd",
