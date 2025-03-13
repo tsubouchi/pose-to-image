@@ -108,6 +108,25 @@ div[data-testid="stStatus"] {
     color: #FFC107;
     margin: 5px 0;
 }
+
+/* 上部スペース削除のための追加スタイル */
+div[data-testid="stVerticalBlock"] > div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* コンテナ間のスペースを最小化 */
+div[data-testid="stVerticalBlock"] > div {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+div.element-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
