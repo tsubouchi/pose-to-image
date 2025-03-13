@@ -5,14 +5,15 @@ import base64
 import os
 import tempfile
 import logging
+import json
 
-# Initialize the Gemini client
-API_KEY = "AIzaSyDX8EkeJkVhsqK76SWz-S_euDYhV4gHGKU"
-genai.configure(api_key=API_KEY)
-
-# Set up logging
+# Initialize logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Initialize Gemini client
+API_KEY = "AIzaSyDX8EkeJkVhsqK76SWz-S_euDYhV4gHGKU"
+genai.configure(api_key=API_KEY)
 
 def generate_image(pose_image, style_prompt):
     """
@@ -29,35 +30,39 @@ def generate_image(pose_image, style_prompt):
                 image_data = base64.b64encode(img_file.read()).decode('utf-8')
                 logger.debug("Image successfully encoded to base64")
 
-        # Generate the image using Gemini
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        response = model.generate_content(
-            contents=[{
-                "parts": [
-                    {"text": "この画像の構図で日本人の女子高生をimage3で出力してください。"},
-                    {
+        # Create request contents
+        contents = [{
+            "parts": [
+                {
+                    "text": "この画像の構図で日本人の女子高生をimage3で出力して"
+                },
+                {
+                    "inline_data": {
                         "mime_type": "image/png",
                         "data": image_data
                     }
-                ]
-            }]
-        )
+                }
+            ]
+        }]
 
+        # Generate the image using Gemini
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        response = model.generate_content(contents)
         logger.debug("Gemini API response received")
 
-        # Extract and process the generated image
+        # Process the response
         if response.parts:
             for part in response.parts:
                 if hasattr(part, 'inline_data'):
                     try:
-                        # Save generated image to temporary file
+                        # Decode and save the generated image
                         image_bytes = base64.b64decode(part.inline_data.data)
                         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
                             out_file.write(image_bytes)
                             logger.debug(f"Generated image saved to: {out_file.name}")
-
-                            # Open and return the image
-                            return Image.open(out_file.name)
+                            generated_image = Image.open(out_file.name)
+                            os.unlink(out_file.name)  # Clean up the temporary file
+                            return generated_image
 
                     except Exception as decode_error:
                         logger.error(f"Error processing generated image: {decode_error}")
