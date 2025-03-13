@@ -243,46 +243,15 @@ Accuracy to reference is the highest priority.
 styles = {
     "Anime Style School Uniform": {
         "base_prompt": """masterpiece, best quality, highly detailed,
-full body pose, follow the stick figure pose EXACTLY:
-- match every joint position precisely
-- keep all limb angles identical
-- maintain exact body orientation
-- preserve all body proportions
-
-style elements:
-- anime style character
-- school uniform with pleated skirt
-- crisp clean lineart
-- professional shading
-- soft ambient lighting
-- classroom background
-- detailed eyes and expressions
-- high quality illustration finish""",
-        "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit, 
-fewer digits, cropped, worst quality, low quality, normal quality, 
-jpeg artifacts, signature, watermark, username, blurry, artist name,
-wrong pose, inaccurate pose, different pose"""
-    },
-    "Casual Fashion (Anime Style)": {
-        "base_prompt": """masterpiece, best quality, highly detailed,
-full body pose, follow the stick figure pose EXACTLY:
-- match every joint position precisely
-- keep all limb angles identical
-- maintain exact body orientation
-- preserve all body proportions
-
-style elements:
-- modern anime style character
-- casual trendy fashion
-- urban environment setting
-- natural lighting and shadows
-- dynamic composition
-- detailed clothing textures
-- professional illustration finish""",
-        "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit,
-fewer digits, cropped, worst quality, low quality, normal quality,
-jpeg artifacts, signature, watermark, username, blurry, artist name,
-wrong pose, inaccurate pose, different pose"""
+full body pose with exact stick figure matching,
+cute anime girl in school uniform,
+sailor uniform style with pleated skirt,
+clear facial features, expressive eyes,
+natural indoor lighting, classroom background,
+professional anime illustration""",
+        "negative_prompt": """bad anatomy, bad hands, missing fingers, 
+wrong pose, inaccurate pose, multiple people,
+worst quality, low quality, blurry, text"""
     }
 }
 
@@ -293,11 +262,9 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# Style selection
-selected_style = st.selectbox(
-    "Select Generation Style",
-    list(styles.keys())
-)
+# Style selection - updated to only show school uniform
+selected_style = "Anime Style School Uniform"
+
 
 # Process uploaded images
 if uploaded_files:
@@ -364,18 +331,54 @@ if uploaded_files:
                 """, unsafe_allow_html=True)
 
             #Generate detailed prompt
-            def analyze_pose_and_generate_prompt(pose_image, style_config):
+            def analyze_pose_and_generate_prompt(pose_image):
                 """
-                Generate an image based on the exact pose from the stick figure
+                Generate detailed pose description from the stick figure
                 """
-                return style_config["base_prompt"]
+                base_prompt = """masterpiece, best quality, highly detailed,
+
+Character Pose Details:
+- full body pose with exact limb positioning:
+  * head tilted slightly {head_angle}
+  * upper body {torso_position}
+  * arms: {arm_description}
+  * legs: {leg_description}
+  * body weight distributed {weight_distribution}
+- preserve exact joint angles and positions
+- maintain precise body proportions
+- ensure natural balance and stability
+
+Style Elements:
+- high quality anime art style
+- school uniform with pleated skirt and sailor collar
+- natural indoor lighting with soft shadows
+- classroom environment background
+- clear facial features and detailed eyes
+- clean lineart and professional shading
+- dynamic composition maintaining pose accuracy
+
+Additional Focus:
+- emphasize the pose's distinctive features
+- maintain anatomical correctness
+- ensure pose readability and balance
+"""
+                # In a real implementation, these would be calculated from the pose_image
+                pose_details = {
+                    "head_angle": "with natural expression",
+                    "torso_position": "balanced and centered",
+                    "arm_description": "naturally positioned following stick figure",
+                    "leg_description": "following exact stick figure angles",
+                    "weight_distribution": "as shown in reference pose"
+                }
+
+                # Format the prompt with actual pose details
+                generation_prompt = base_prompt.format(**pose_details)
+
+                return generation_prompt.strip()
 
 
-            generation_prompt = analyze_pose_and_generate_prompt(
-                pose_image, 
-                styles[selected_style]
-            )
-            st.text_area("Prompt", value=generation_prompt, height=100, disabled=True)
+            generation_prompt = analyze_pose_and_generate_prompt(pose_image)
+            st.text_area("Prompt", value=generation_prompt, height=150, disabled=True)
             st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
             # Step 4: Generate Image
@@ -425,7 +428,7 @@ st.markdown("""
 ---
 ### How to Use:
 1. Upload one or more images containing people
-2. Select a generation style to set the base prompt
+2. The generation style is fixed to "Anime Style School Uniform".
 3. Each image will be processed through four steps:
    - Step 1: Original Image Display
    - Step 2: Pose Extraction
