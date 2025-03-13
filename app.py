@@ -243,25 +243,46 @@ Accuracy to reference is the highest priority.
 styles = {
     "Anime Style School Uniform": {
         "base_prompt": """masterpiece, best quality, highly detailed,
-{pose_description}
-anime style, school uniform, cute young student,
-classroom environment, sunny day, warm lighting,
-detailed eyes, soft shading, clean lineart,
-professional anime illustration""",
+full body pose, follow the stick figure pose EXACTLY:
+- match every joint position precisely
+- keep all limb angles identical
+- maintain exact body orientation
+- preserve all body proportions
+
+style elements:
+- anime style character
+- school uniform with pleated skirt
+- crisp clean lineart
+- professional shading
+- soft ambient lighting
+- classroom background
+- detailed eyes and expressions
+- high quality illustration finish""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit, 
 fewer digits, cropped, worst quality, low quality, normal quality, 
-jpeg artifacts, signature, watermark, username, blurry, artist name"""
+jpeg artifacts, signature, watermark, username, blurry, artist name,
+wrong pose, inaccurate pose, different pose"""
     },
     "Casual Fashion (Anime Style)": {
         "base_prompt": """masterpiece, best quality, highly detailed,
-{pose_description}
-modern anime style, trendy casual fashion,
-urban environment, natural lighting,
-detailed clothing, dynamic composition,
-professional anime illustration""",
+full body pose, follow the stick figure pose EXACTLY:
+- match every joint position precisely
+- keep all limb angles identical
+- maintain exact body orientation
+- preserve all body proportions
+
+style elements:
+- modern anime style character
+- casual trendy fashion
+- urban environment setting
+- natural lighting and shadows
+- dynamic composition
+- detailed clothing textures
+- professional illustration finish""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit,
 fewer digits, cropped, worst quality, low quality, normal quality,
-jpeg artifacts, signature, watermark, username, blurry, artist name"""
+jpeg artifacts, signature, watermark, username, blurry, artist name,
+wrong pose, inaccurate pose, different pose"""
     }
 }
 
@@ -345,25 +366,9 @@ if uploaded_files:
             #Generate detailed prompt
             def analyze_pose_and_generate_prompt(pose_image, style_config):
                 """
-                Generate a prompt that combines pose accuracy with the selected style
+                Generate an image based on the exact pose from the stick figure
                 """
-                # Create detailed pose description based on the extracted pose
-                pose_description = """
-full body pose, precise pose matching:
-- exact joint positions and angles
-- accurate body proportions
-- natural body mechanics
-- proper weight distribution
-- clear pose readability
-- centered composition
-"""
-
-                # Create the complete prompt using the selected style
-                complete_prompt = style_config["base_prompt"].format(
-                    pose_description=pose_description
-                )
-
-                return complete_prompt.strip()
+                return style_config["base_prompt"]
 
 
             generation_prompt = analyze_pose_and_generate_prompt(
