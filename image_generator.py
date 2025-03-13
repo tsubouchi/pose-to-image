@@ -5,6 +5,7 @@ import io
 import json
 import requests
 from PIL import Image
+import tempfile
 
 # Initialize logging
 logging.basicConfig(level=logging.DEBUG)
@@ -267,11 +268,11 @@ def generate_image_with_style(pose_image, style_image):
             raise Exception("Failed to generate enhanced prompt")
 
         # API endpoint for generation
-        host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
+        host = "https://api.stability.ai/v2beta/stable-image/control/sketch"
 
         # Prepare headers
         headers = {
-            "Accept": "image/*",
+            "Accept": "image/png",
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
@@ -280,15 +281,17 @@ def generate_image_with_style(pose_image, style_image):
         response = requests.post(
             host,
             headers=headers,
-            files={"none": ""},
+            files={
+                "image": ("pose.png", pose_image_to_bytes(pose_image), "image/png")
+            },
             data={
                 "prompt": prompt_data["main_prompt"],
                 "negative_prompt": prompt_data["negative_prompt"],
-                "output_format": "png",
                 "cfg_scale": prompt_data["parameters"]["cfg_scale"],
                 "steps": prompt_data["parameters"]["steps"],
-                "width": 512,
-                "height": 768,
+                "control_strength": 0.8,
+                "seed": 0,
+                "output_format": "png"
             }
         )
 
@@ -305,6 +308,12 @@ def generate_image_with_style(pose_image, style_image):
     except Exception as e:
         logger.error(f"Error in generate_image_with_style: {str(e)}")
         raise Exception(f"Failed to generate styled image: {str(e)}")
+
+def pose_image_to_bytes(image):
+    """Convert PIL Image to bytes for API request"""
+    buf = io.BytesIO()
+    image.save(buf, format='PNG')
+    return buf.getvalue()
 
 def generate_controlnet_openpose(pose_image, style_prompt):
     """
@@ -438,5 +447,3 @@ def generate_image(pose_image, style_prompt, system_prompt):
                     logger.debug(f"Cleaned up temporary file: {temp_file}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temporary file {temp_file}: {cleanup_error}")
-
-import tempfile

@@ -33,20 +33,21 @@ st.markdown("""
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 10px;
-    height: 60vh;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 10px;
-    height: 45vh;
+    padding: 5px;
+    margin-top: 5px;
+    height: 65vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    overflow-y: auto;
 }
 
 .upload-header {
@@ -66,7 +67,7 @@ div[data-testid="stImage"] img {
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
     max-width: 100% !important;
-    max-height: 45vh !important;
+    max-height: 60vh !important;
     margin: 0;
 }
 
