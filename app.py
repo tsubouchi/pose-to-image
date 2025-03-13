@@ -163,81 +163,15 @@ st.markdown("""
 
 st.title("Pose to Image Generator")
 
-# Initialize session state for images and prompts
+# Initialize session state
 if 'original_images' not in st.session_state:
     st.session_state.original_images = []
 if 'pose_images' not in st.session_state:
     st.session_state.pose_images = []
+if 'intermediate_images' not in st.session_state:
+    st.session_state.intermediate_images = []
 if 'generated_images' not in st.session_state:
     st.session_state.generated_images = []
-if 'generation_prompt' not in st.session_state:
-    st.session_state.generation_prompt = None
-if 'system_prompt' not in st.session_state:
-    st.session_state.system_prompt = None
-
-
-# Add system prompt editing in sidebar
-with st.sidebar:
-    st.header("System Settings")
-    system_prompt = st.text_area(
-        "System Prompt",
-        value="""CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
-
-1. Pose Accuracy Requirements:
-- Match EVERY joint position with the stick figure EXACTLY
-- Preserve ALL angles between limbs precisely
-- Maintain the EXACT body orientation and tilt
-- Keep the same weight distribution and balance point
-
-2. Joint-by-Joint Alignment:
-Head/Neck:
-- Copy head tilt and orientation
-- Match neck angle precisely
-
-Arms:
-- Replicate shoulder joint angles
-- Match elbow bend degree
-- Copy wrist positions
-- Keep arm length proportions
-
-Legs:
-- Match hip joint positioning
-- Copy knee bend angles
-- Replicate ankle positions
-- Preserve leg length ratios
-
-Torso:
-- Match spine curvature
-- Keep the same hip alignment
-- Replicate shoulder width
-- Maintain torso twist angle
-
-3. Spatial Requirements:
-- Keep ALL limb positions relative to center
-- Match front/back positioning of limbs
-- Preserve left/right placement exactly
-- Maintain ground contact points
-
-4. Critical Rules:
-- NO deviation from stick figure pose
-- NO artistic interpretation of positions
-- NO adjusting for style over accuracy
-- EXACT match to reference required
-
-Review process:
-1. Check joint angles match reference
-2. Verify limb positions are exact
-3. Confirm body orientation
-4. Ensure pose is physically accurate
-
-This is a TECHNICAL SPECIFICATION, not a suggestion.
-Accuracy to reference is the highest priority.
-""",
-        height=300
-    )
-    if 'system_prompt' not in st.session_state or system_prompt != st.session_state.system_prompt:
-        st.session_state.system_prompt = system_prompt
-        st.success("System prompt updated successfully")
 
 # Style selection options
 styles = {
@@ -262,14 +196,13 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# Style selection - updated to only show school uniform
+# Style selection - fixed to school uniform
 selected_style = "Anime Style School Uniform"
-
 
 # Process uploaded images
 if uploaded_files:
     try:
-        # Create a container for the progress bar
+        # Progress container
         progress_container = st.container()
         with progress_container:
             progress_bar = st.progress(0)
@@ -283,7 +216,7 @@ if uploaded_files:
             progress_bar.progress(progress)
             status_text.text(f"Processing image {idx + 1} of {num_images}")
 
-            # Create a container for this image set
+            # Create image set container
             st.markdown(f"""
             <div class="image-card">
                 <div class="step-header">
@@ -292,7 +225,7 @@ if uploaded_files:
                 </div>
             """, unsafe_allow_html=True)
 
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
 
             # Step 1: Original Image
             with col1:
@@ -321,7 +254,7 @@ if uploaded_files:
                     st.error("Failed to extract pose from the image")
                     continue
 
-            # Step 3: Generate Prompt
+            # Step 3: Generation Prompt
             with col3:
                 st.markdown("""
                 <div class="step-header">
@@ -330,22 +263,17 @@ if uploaded_files:
                 </div>
                 """, unsafe_allow_html=True)
 
-            #Generate detailed prompt
-            def analyze_pose_and_generate_prompt(pose_image, pose_descriptions):
-                """
-                Generate detailed pose description using calculated joint angles
-                """
-                base_prompt = """masterpiece, best quality, highly detailed,
+                generation_prompt = f"""masterpiece, best quality, highly detailed,
 
 Body Parts Position Description:
 1. Upper Body:
-- Right Arm: shoulder {right_shoulder_desc}, elbow {right_elbow_desc}
-- Left Arm: shoulder {left_shoulder_desc}, elbow {left_elbow_desc}
-- {spine_desc}
+- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
+- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
+- {pose_descriptions['spine_desc']}
 
 2. Lower Body:
-- Right Leg: hip {right_hip_desc}, knee {right_knee_desc}
-- Left Leg: hip {left_hip_desc}, knee {left_knee_desc}
+- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
+- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
 Style Elements:
 - high quality anime art style
@@ -356,36 +284,56 @@ Style Elements:
 - clean lineart and professional shading
 """
 
-                # Format the prompt with the calculated pose descriptions
-                generation_prompt = base_prompt.format(**pose_descriptions)
+                st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
+                st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
-                return generation_prompt.strip()
-
-            generation_prompt = analyze_pose_and_generate_prompt(pose_image, pose_descriptions)
-            st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
-            st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
-
-            # Step 4: Generate Image
+            # Step 4: Pose to Human
             with col4:
                 st.markdown("""
                 <div class="step-header">
                     <div class="step-icon">4</div>
-                    <h3>Generated Image</h3>
+                    <h3>Pose to Human</h3>
                 </div>
                 """, unsafe_allow_html=True)
                 try:
-                    generated_image = generate_image(
-                        pose_image, 
+                    # First pass: Convert stick figure to basic human form
+                    human_pose = generate_image(
+                        pose_image,
+                        "Convert stick figure to human form, maintain exact pose",
+                        st.session_state.system_prompt
+                    )
+                    if human_pose is not None:
+                        st.image(human_pose, use_container_width=True)
+                        st.markdown('<div class="tag">Human Form Generated</div>', unsafe_allow_html=True)
+                    else:
+                        st.error("Failed to convert pose to human form")
+                        continue
+                except Exception as e:
+                    st.error(f"Error in pose to human conversion: {str(e)}")
+                    continue
+
+            # Step 5: Final Style Generation
+            with col5:
+                st.markdown("""
+                <div class="step-header">
+                    <div class="step-icon">5</div>
+                    <h3>Final Image</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                try:
+                    # Second pass: Apply final style to human form
+                    final_image = generate_image(
+                        human_pose,
                         generation_prompt,
                         st.session_state.system_prompt
                     )
-                    if generated_image is not None:
-                        st.image(generated_image, use_container_width=True)
+                    if final_image is not None:
+                        st.image(final_image, use_container_width=True)
                         st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
 
                         # Add download button
                         buf = io.BytesIO()
-                        generated_image.save(buf, format='PNG')
+                        final_image.save(buf, format='PNG')
                         st.download_button(
                             label="Download",
                             data=buf.getvalue(),
@@ -394,29 +342,30 @@ Style Elements:
                             use_container_width=True
                         )
                     else:
-                        st.error("Failed to generate image")
+                        st.error("Failed to generate final image")
                 except Exception as gen_error:
-                    st.error(f"Error generating image: {str(gen_error)}")
+                    st.error(f"Error generating final image: {str(gen_error)}")
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Clear progress indicators after completion
+        # Clear progress indicators
         progress_bar.empty()
         status_text.success(f"Successfully processed {num_images} images!")
 
     except Exception as e:
         st.error(f"Error processing images: {str(e)}")
 
-# Add instructions at the bottom
+# Instructions
 st.markdown("""
 ---
 ### How to Use:
 1. Upload one or more images containing people
-2. The generation style is fixed to "Anime Style School Uniform".
-3. Each image will be processed through four steps:
+2. The generation style is fixed to "Anime Style School Uniform"
+3. Each image will be processed through five steps:
    - Step 1: Original Image Display
    - Step 2: Pose Extraction
    - Step 3: Prompt Generation
-   - Step 4: Image Generation
-4. Download generated images using the download buttons below each result
+   - Step 4: Pose to Human Conversion
+   - Step 5: Final Style Generation
+4. Download generated images using the download buttons
 """)
