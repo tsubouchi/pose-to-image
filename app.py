@@ -34,19 +34,19 @@ st.markdown("""
     border-radius: 8px;
     padding: 10px;
     height: 60vh;
-    overflow-y: auto;
 }
 
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 5px;
-    margin-top: 5px;
-    height: 50vh;
+    padding: 10px;
+    margin-top: 10px;
+    height: 45vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
 }
 
 .upload-header {
@@ -112,28 +112,22 @@ with left_col:
 
 with right_col:
     st.markdown("## Generated Result")
-    st.markdown('<div class="result-section">', unsafe_allow_html=True)
 
     if pose_file and style_file:
         try:
-            col1, col2 = st.columns(2)
-            result_image = None
-
             # Pose Analysis
-            with col1:
-                with st.status("🔍 ポーズを解析中...") as status:
-                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                    if pose_result is None:
-                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                        st.stop()
-                    status.update(label="✅ ポーズの解析が完了", state="complete")
+            with st.status("🔍 ポーズを解析中...") as status:
+                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                if pose_result is None:
+                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                    st.stop()
+                status.update(label="✅ ポーズの解析が完了", state="complete")
 
             # Image Generation
-            with col2:
-                with st.status("🎨 画像を生成中...") as status:
-                    result_image = generate_image_with_style(pose_image, style_image)
-                    if result_image:
-                        status.update(label="✅ 画像の生成が完了", state="complete")
+            with st.status("🎨 画像を生成中...") as status:
+                result_image = generate_image_with_style(pose_image, style_image)
+                if result_image:
+                    status.update(label="✅ 画像の生成が完了", state="complete")
 
             # Preview Area
             st.markdown('<div class="preview-area">', unsafe_allow_html=True)
@@ -167,8 +161,6 @@ with right_col:
             logger.error(f"Error processing images: {str(e)}")
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions
 with st.expander("💡 使い方"):
