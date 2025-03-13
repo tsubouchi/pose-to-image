@@ -33,7 +33,6 @@ def parse_gemini_response(response_text: str) -> dict:
         logger.error(f"Response text: {response_text}")
         raise Exception(f"Failed to parse Gemini response: {str(e)}")
 
-
 def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
     """
     Use Gemini to analyze both images and provide detailed descriptions
@@ -57,51 +56,49 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": """Analyze these two images and provide detailed information in JSON format:
+                    "text": """Analyze these two images for a style transfer task:
 
-1. For the first image (pose reference):
-- Describe the exact pose, body positioning, and orientation
-- Detail gesture and body language
-- Note any distinctive pose elements
+1. First Image (Pose Reference Only):
+- Describe only the pose and body positioning
+- Focus on body language and gesture
+- Do not include any style or clothing details from this image
 
-2. For the second image (style and clothing reference):
-- Identify the artistic style (anime, photorealistic, etc)
-- Detailed clothing description:
-  * Type of garments
+2. Second Image (Style and Clothing Reference):
+- Detailed clothing analysis:
+  * All garment types and pieces
+  * Specific design elements
+  * Materials and textures
+  * Fit and cut details
   * Colors and patterns
-  * Material and texture
-  * Fit and style
-  * Accessories and details
-- Technical aspects:
-  * Camera angle and composition
-  * Lighting setup and mood
-  * Color grading and effects
-- Overall style elements:
-  * Art direction
+  * Accessories
+- Style elements:
+  * Overall artistic style
   * Visual effects
-  * Background treatment
+  * Lighting and atmosphere
+  * Color scheme and mood
+  * Composition
 
 Format the response exactly like this:
 {
   "pose": {
-    "body_position": "detailed description",
-    "gesture": "specific details",
-    "key_elements": ["distinctive features"]
+    "body_position": "detailed pose description",
+    "gesture": "body language details",
+    "key_points": ["important pose elements"]
   },
-  "clothing": {
-    "garments": ["list of clothing items"],
-    "colors": ["color palette"],
-    "materials": ["fabric and texture details"],
-    "accessories": ["all accessories"],
-    "special_details": ["unique design elements"]
-  },
-  "style": {
-    "artistic_style": "specific style",
-    "technical": {
-      "camera": "angle and settings",
-      "lighting": "lighting details"
+  "reference_style": {
+    "clothing": {
+      "garments": ["detailed list of clothing items"],
+      "design": ["specific design elements"],
+      "materials": ["fabric and texture details"],
+      "colors": ["color palette"],
+      "accessories": ["all accessories"]
     },
-    "effects": ["visual effects"]
+    "artistic": {
+      "style": "overall artistic style",
+      "lighting": "lighting description",
+      "atmosphere": "mood and ambiance",
+      "effects": ["visual effects"]
+    }
   }
 }"""
                 }, {
@@ -158,38 +155,42 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Using this image analysis, create a detailed Stable Diffusion prompt that will precisely recreate both the pose and clothing style.
+                    "text": f"""Create a detailed Stable Diffusion prompt that recreates the exact pose from the first image 
+while applying the style and clothing from the second image.
 
-Analysis: {json.dumps(analysis, indent=2)}
+Analysis result:
+{json.dumps(analysis, indent=2)}
 
 Requirements:
 1. Quality and style tags:
    - Start with: masterpiece, best quality, highly detailed
-   - Include specific artistic style
-2. Pose description:
-   - Precise body position and gesture
-   - Expression and attitude
-3. Clothing details:
-   - Exact garment descriptions
-   - Colors and patterns
+   - Include reference style's artistic approach
+2. Clothing description (from reference style):
+   - Exact garment details
    - Materials and textures
-   - Accessories and details
-4. Technical aspects:
-   - Lighting setup
-   - Camera angle
+   - Colors and patterns
+   - Accessories
+3. Pose description (from pose reference):
+   - Precise body position
+   - Gesture and attitude
+4. Visual style (from reference style):
+   - Lighting and atmosphere
    - Color grading
    - Special effects
-5. Background and atmosphere
+5. Technical aspects:
+   - Camera angle
+   - Composition
+   - Background elements
 
-Format the response EXACTLY like this, with no additional text:
-{{
-  "main_prompt": "masterpiece, best quality, [style], [pose], [clothing], [lighting], [camera], [effects]",
-  "negative_prompt": "avoid these elements",
-  "parameters": {{
+Format the response EXACTLY like this:
+{
+  "main_prompt": "masterpiece, best quality, [clothing], [pose], [style], [effects]",
+  "negative_prompt": "wrong clothes, wrong style, poor quality, blurry, distorted",
+  "parameters": {
     "cfg_scale": 7,
     "steps": 20
-  }}
-}}"""
+  }
+}"""
                 }]
             }]
         }

@@ -10,7 +10,8 @@ logging.basicConfig(level=logging.INFO)
 
 st.set_page_config(
     page_title="AI Style Transfer with Pose Matching",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for modern dark mode design
@@ -24,22 +25,25 @@ st.markdown("""
 .input-section {
     background-color: #0a0a0a;
     border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
     border: 1px solid #333;
+    max-height: calc(45vh - 20px);
+    overflow: hidden;
 }
 
 .result-container {
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 15px;
-    height: 100%;
+    height: calc(90vh - 100px);
+    overflow-y: auto;
 }
 
 .upload-header {
     font-size: 1.1em;
     font-weight: 500;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     padding-bottom: 5px;
     border-bottom: 1px solid #333;
 }
@@ -49,6 +53,19 @@ st.markdown("""
     padding: 10px;
     border-radius: 4px;
     background-color: rgba(25, 118, 210, 0.05);
+}
+
+.stImage {
+    max-height: calc(40vh - 100px) !important;
+}
+
+div[data-testid="stImage"] {
+    text-align: center;
+}
+
+div[data-testid="stImage"] > img {
+    max-height: calc(40vh - 100px);
+    width: auto !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -76,7 +93,7 @@ with left_col:
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
     st.markdown('<div class="upload-header">スタイル参照画像</div>', unsafe_allow_html=True)
     style_file = st.file_uploader(
-        "目標とする画風の画像をアップロード",
+        "目標とする画風や洋服の画像をアップロード",
         type=['png', 'jpg', 'jpeg'],
         key="style_upload"
     )
