@@ -40,7 +40,12 @@ def generate_image(pose_image, style_prompt):
         # Create request contents
         parts = [
             {
-                "text": "この棒人間のポーズに基づいて新しい画像を生成してください。以下の要素を含めてください：\n" + style_prompt
+                "text": """
+                この棒人間のポーズに基づいて、新しい画像を生成してください。
+                必ず画像を出力してください。テキストではなく、画像データを返してください。
+
+                生成する画像の詳細：
+                """ + style_prompt
             },
             {
                 "inline_data": {
@@ -59,23 +64,35 @@ def generate_image(pose_image, style_prompt):
         logger.debug(f"Response received - Type: {type(response)}")
         logger.debug(f"Response attributes: {dir(response)}")
 
-        # Process the response
+        # Check all response data for debugging
         if hasattr(response, 'text'):
             logger.debug(f"Response text: {response.text}")
 
         if hasattr(response, 'candidates'):
             logger.debug(f"Response candidates: {response.candidates}")
 
-        image_data = None
         if hasattr(response, 'parts'):
             for i, part in enumerate(response.parts):
                 logger.debug(f"Part {i} type: {type(part)}")
+                logger.debug(f"Part {i} attributes: {dir(part)}")
                 if hasattr(part, 'inline_data'):
-                    image_data = part.inline_data.data
-                    break
+                    try:
+                        image_data = part.inline_data.data
+                        logger.debug(f"Found image data in part {i}")
+                        break
+                    except Exception as e:
+                        logger.error(f"Error decoding inline data in part {i}: {e}")
+                        raise
+                else:
+                    logger.debug(f"Part {i} content: {part}")
 
-        if not image_data:
-            raise ValueError("No image data found in response")
+        if not hasattr(response, 'parts'):
+            logger.error("Response does not contain 'parts' attribute")
+            raise ValueError("Invalid response format - no parts found")
+
+        if not any(hasattr(part, 'inline_data') for part in response.parts):
+            logger.error("No inline_data found in any response parts")
+            raise ValueError("No image data in response")
 
         # Save and verify the image
         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
