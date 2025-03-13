@@ -307,18 +307,32 @@ Style Elements:
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # First pass: Convert stick figure to basic human form
-                        human_form_prompt = f"""Convert stick figure to realistic human form while preserving exact pose:
-- Maintain all joint angles: {', '.join([f'{k}: {v}' for k,v in pose_descriptions.items()])}
-- Keep exact limb proportions and body alignment
-- Create basic human anatomical features
-- Use neutral lighting and simple background
-- Focus on pose accuracy over style"""
+                        # First pass: Convert stick figure to realistic human form
+                        human_form_prompt = f"""Important: Convert stick figure to precise human form.
+
+CRITICAL - Exact Pose Requirements:
+{', '.join([f'{k}: {v}' for k,v in pose_descriptions.items()])}
+
+Instructions for conversion:
+1. Maintain ALL joint angles and positions exactly as shown
+2. Keep body proportions anatomically correct
+3. Preserve the pose's distinctive characteristics
+4. Focus on structural accuracy over style
+
+Technical Requirements:
+- Use neutral 3D rendering
+- Simple gray background
+- Clear lighting without shadows
+- Focus on skeletal and muscular structure
+- Ensure all limbs are correctly positioned
+- Maintain center of gravity and balance points
+
+Priority: Accuracy of pose over visual aesthetics"""
 
                         human_pose = generate_image(
                             pose_image,
                             human_form_prompt,
-                            "A professional 3D rendered human figure, anatomically correct, exact pose matching"
+                            "Anatomically correct human figure, exact pose matching, technical reference quality"
                         )
                         if human_pose is not None:
                             st.image(human_pose, use_container_width=True)
@@ -341,18 +355,37 @@ Style Elements:
                     try:
                         # Second pass: Apply anime style while maintaining pose
                         style_prompt = f"""masterpiece, best quality, highly detailed anime illustration,
-{generation_prompt}
 
-Critical Requirements:
-- Maintain exact pose from reference image
-- Keep all joint angles and body proportions
-- Apply anime style and school uniform
-- Ensure high quality and professional finish"""
+POSE ACCURACY IS CRITICAL:
+1. Upper Body:
+- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
+- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
+- {pose_descriptions['spine_desc']}
+
+2. Lower Body:
+- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
+- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
+
+Style Requirements:
+- High quality anime art style
+- School uniform with pleated skirt and sailor collar
+- Natural indoor lighting with soft shadows
+- Classroom environment background
+- Clear facial features and detailed eyes
+- Clean lineart and professional shading
+
+Critical Instructions:
+- NO deviation from the reference pose
+- Keep ALL joint angles identical
+- Maintain exact body proportions
+- Preserve balance and weight distribution
+- Ensure perfect pose symmetry
+- Match every body part position precisely"""
 
                         final_image = generate_image(
                             human_pose,
                             style_prompt,
-                            "Maintain exact pose while applying anime style and school uniform"
+                            "Perfect pose accuracy required, maintain exact joint positions while applying anime style"
                         )
                         if final_image is not None:
                             st.image(final_image, use_container_width=True)
