@@ -41,10 +41,14 @@ def generate_image(pose_image, style_prompt):
         parts = [
             {
                 "text": """
-                この棒人間のポーズに基づいて、新しい画像を生成してください。
-                必ず画像を出力してください。テキストではなく、画像データを返してください。
+                Generate a new image based on this stick figure pose.
+                The output must be an image, not text.
+                Return the response as image data in base64 format.
 
-                生成する画像の詳細：
+                Image generation requirements:
+                - Use the exact pose from the input stick figure
+                - Create an anime-style character
+                - Follow these style guidelines:
                 """ + style_prompt
             },
             {
@@ -60,7 +64,14 @@ def generate_image(pose_image, style_prompt):
 
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(parts)
+        response = model.generate_content(
+            parts,
+            generation_config={
+                "temperature": 0.9,
+                "top_p": 0.95,
+                "top_k": 40
+            }
+        )
         logger.debug(f"Response received - Type: {type(response)}")
         logger.debug(f"Response attributes: {dir(response)}")
 
@@ -71,40 +82,39 @@ def generate_image(pose_image, style_prompt):
         if hasattr(response, 'candidates'):
             logger.debug(f"Response candidates: {response.candidates}")
 
-        if hasattr(response, 'parts'):
-            for i, part in enumerate(response.parts):
-                logger.debug(f"Part {i} type: {type(part)}")
-                logger.debug(f"Part {i} attributes: {dir(part)}")
-                if hasattr(part, 'inline_data'):
-                    try:
-                        image_data = part.inline_data.data
-                        logger.debug(f"Found image data in part {i}")
-                        break
-                    except Exception as e:
-                        logger.error(f"Error decoding inline data in part {i}: {e}")
-                        raise
-                else:
-                    logger.debug(f"Part {i} content: {part}")
-
         if not hasattr(response, 'parts'):
             logger.error("Response does not contain 'parts' attribute")
             raise ValueError("Invalid response format - no parts found")
 
-        if not any(hasattr(part, 'inline_data') for part in response.parts):
-            logger.error("No inline_data found in any response parts")
-            raise ValueError("No image data in response")
+        # Process response parts
+        for i, part in enumerate(response.parts):
+            logger.debug(f"Part {i} type: {type(part)}")
+            logger.debug(f"Part {i} attributes: {dir(part)}")
+            if hasattr(part, 'text'):
+                logger.debug(f"Part {i} text: {part.text}")
+            if hasattr(part, 'inline_data'):
+                try:
+                    logger.debug("Found inline_data in response")
+                    image_data = part.inline_data.data
 
-        # Save and verify the image
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
-            temp_files.append(out_file.name)
-            img_bytes = base64.b64decode(image_data)
-            out_file.write(img_bytes)
-            logger.debug(f"Saved decoded image to: {out_file.name}")
+                    # Save and verify the image
+                    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
+                        temp_files.append(out_file.name)
+                        img_bytes = base64.b64decode(image_data)
+                        out_file.write(img_bytes)
+                        logger.debug(f"Saved decoded image to: {out_file.name}")
 
-            # Verify the image can be opened
-            img = Image.open(out_file.name)
-            logger.debug(f"Successfully opened generated image: format={img.format}, size={img.size}")
-            return img
+                        # Verify the image can be opened
+                        img = Image.open(out_file.name)
+                        logger.debug(f"Successfully opened generated image: format={img.format}, size={img.size}")
+                        return img
+
+                except Exception as e:
+                    logger.error(f"Error processing inline data: {e}")
+                    continue
+
+        logger.error("No valid image data found in response parts")
+        raise ValueError("No image data in response")
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
