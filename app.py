@@ -233,40 +233,46 @@ def process_image(image, idx, cols):
     """Process a single image with improved error handling."""
     try:
         # Step 2: Pose Extraction with improved error handling
-        pose_image, pose_descriptions, results = extract_pose(image)
+        with cols[1]:
+            st.markdown("""
+            <div class="step-header">
+                <div class="step-icon">2</div>
+                <h3>Pose Extraction</h3>
+            </div>
+            """, unsafe_allow_html=True)
 
-        if pose_image is None:
-            st.error("""
-            ポーズの検出に失敗しました。以下をお試しください：
-            - 画像の明るさやコントラストを調整
-            - 人物が画像の中心にいることを確認
-            - 人物全体が写っていることを確認
-            """)
-            return False
+            pose_image, pose_descriptions, results = extract_pose(image)
 
-        # Display pose image and suggestions
-        st.image(pose_image, use_container_width=True)
-        st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
+            if pose_image is not None and results and results.pose_landmarks:
+                # Display pose image and suggestions
+                st.image(pose_image, use_container_width=True)
+                st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
 
-        if results and results.pose_landmarks:
-            suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
+                # Add pose refinement suggestions
+                suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
+                if suggestions:
+                    st.markdown("""
+                    <div class="step-header">
+                        <h4>AI Pose Suggestions</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            if suggestions:
-                st.markdown("""
-                <div class="step-header">
-                    <h4>AI Pose Suggestions</h4>
-                </div>
-                """, unsafe_allow_html=True)
-
-                for key, suggestion in suggestions.items():
-                    if key != "error":
-                        st.markdown(f"""
-                        <div class="suggestion-item">
-                            <span class="suggestion-text">🔍 {suggestion}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-        return True
+                    for key, suggestion in suggestions.items():
+                        if key != "error":
+                            st.markdown(f"""
+                            <div class="suggestion-item">
+                                <span class="suggestion-text">🔍 {suggestion}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                return True
+            else:
+                st.error("""
+                ポーズの検出に失敗しました。以下をお試しください：
+                - 画像の明るさやコントラストを調整
+                - 人物が画像の中心にいることを確認
+                - 人物全体が写っていることを確認
+                """)
+                return False
 
     except Exception as e:
         st.error(f"画像処理中にエラーが発生しました: {str(e)}")
