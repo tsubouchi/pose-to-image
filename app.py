@@ -33,7 +33,8 @@ st.markdown("""
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 10px;
-    min-height: 80vh;
+    height: 60vh;
+    overflow-y: auto;
 }
 
 .upload-header {
@@ -45,7 +46,7 @@ st.markdown("""
 /* 画像サイズの調整 */
 div[data-testid="stImage"] img {
     max-width: 25% !important;
-    max-height: 20vh !important;
+    max-height: 15vh !important;
     display: block;
     margin: 0 auto;
 }
@@ -62,6 +63,12 @@ div[data-testid="stStatus"] {
     border-radius: 4px;
     padding: 10px;
     margin: 5px 0;
+}
+
+/* 生成結果の画像サイズ調整 */
+.generation-step div[data-testid="stImage"] img {
+    max-width: 40% !important;
+    max-height: 30vh !important;
 }
 
 /* ヘッダーの調整 */

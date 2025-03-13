@@ -186,31 +186,28 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Create a detailed Stable Diffusion prompt that combines:
-- EXACT pose from the first image
-- Complete style and clothing from the second image
+                    "text": f"""Generate a Stable Diffusion prompt to recreate the EXACT pose from the first image while applying the COMPLETE style from the second image.
 
 Analysis result:
 {json.dumps(analysis, indent=2)}
 
-Create the prompt in this EXACT format:
+Create a prompt in this format:
 {{
-  "main_prompt": "masterpiece, best quality, highly detailed, (exact match of reference art style), [detailed clothing description], [precise pose description], [visual style elements]",
-  "negative_prompt": "wrong art style, inaccurate pose, different clothing style, low quality, blurry, distorted",
+  "main_prompt": "masterpiece, best quality, highly detailed, (art style from reference), [clothing details], [pose description], [visual elements]",
+  "negative_prompt": "wrong pose, wrong style, low quality, blurry, distorted",
   "parameters": {{
     "cfg_scale": 7,
     "steps": 20
   }}
 }}
 
-The main_prompt must:
-1. Start with quality tags
-2. Explicitly specify the reference art style (anime/realistic/etc)
-3. Include detailed clothing description from reference
-4. Maintain exact pose from first image
-5. Include all visual style elements from reference
+Requirements:
+1. Art style: Use EXACTLY the style from the reference image
+2. Clothing: Include ALL clothing details from reference
+3. Pose: Keep EXACT pose from first image
+4. Add style elements from reference: lighting, effects, mood
 
-Use professional artistic terminology and be very specific about style elements."""
+Return ONLY the JSON object, no additional text."""
                 }]
             }]
         }
@@ -227,11 +224,31 @@ Use professional artistic terminology and be very specific about style elements.
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text_response)
+
+        # Clean and parse JSON response
+        start = text_response.find('{')
+        end = text_response.rfind('}') + 1
+
+        if start == -1 or end == 0:
+            raise Exception("No JSON content found in response")
+
+        json_content = text_response[start:end].strip()
+        prompt_data = json.loads(json_content)
+
+        # Validate required fields
+        if not all(key in prompt_data for key in ["main_prompt", "negative_prompt", "parameters"]):
+            raise Exception("Missing required fields in prompt data")
+
+        return prompt_data
 
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
-        return None
+        # Return default prompt as fallback
+        return {
+            "main_prompt": "masterpiece, best quality, highly detailed, maintain exact pose",
+            "negative_prompt": "wrong pose, low quality, blurry, distorted",
+            "parameters": {"cfg_scale": 7, "steps": 20}
+        }
 
 def generate_image_with_style(pose_image, style_image):
     """
