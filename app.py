@@ -242,36 +242,62 @@ Accuracy to reference is the highest priority.
 # Style selection options
 styles = {
     "Anime Style School Uniform": {
-        "base_prompt": """masterpiece, best quality, highly detailed, anime style, school uniform,
-young student, {pose_description}
-professional lighting, vibrant colors, sharp focus""",
+        "base_prompt": """
+{pose_analysis}
+
+Style and Rendering:
+- masterpiece, best quality, highly detailed
+- anime illustration style
+- school uniform theme
+- professional digital art
+- crisp lines and clean shading
+
+Technical Details:
+- perfect lighting and shadows
+- detailed fabric textures
+- sharp focus
+- high resolution output
+- professional composition
+
+Additional Elements:
+- natural indoor lighting
+- soft ambient occlusion
+- subtle rim lighting
+- classroom environment
+- dynamic composition
+""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit, 
 fewer digits, cropped, worst quality, low quality, normal quality, 
 jpeg artifacts, signature, watermark, username, blurry, artist name"""
     },
     "Casual Fashion (Anime Style)": {
-        "base_prompt": """masterpiece, best quality, highly detailed, anime style, casual clothing,
-modern fashion, {pose_description}
-natural lighting, urban setting, dynamic composition""",
+        "base_prompt": """
+{pose_analysis}
+
+Style and Rendering:
+- masterpiece, best quality, highly detailed
+- modern anime art style
+- casual street fashion
+- urban contemporary setting
+- professional illustration quality
+
+Technical Details:
+- perfect lighting and shadows
+- detailed clothing textures
+- sharp focus on character
+- high resolution artwork
+- dynamic composition
+
+Additional Elements:
+- natural outdoor lighting
+- soft atmospheric effects
+- urban background elements
+- street photography inspired
+- trendy fashion details
+""",
         "negative_prompt": """bad anatomy, bad hands, missing fingers, extra digit,
 fewer digits, cropped, worst quality, low quality, normal quality,
 jpeg artifacts, signature, watermark, username, blurry, artist name"""
-    },
-    "Fashion Portrait (Photorealistic)": {
-        "base_prompt": """professional photography, fashion portrait, photorealistic, high-end clothing,
-detailed fabric textures, {pose_description}
-studio lighting, 8k uhd, high fashion magazine quality""",
-        "negative_prompt": """cartoon, anime, illustration, bad anatomy, bad hands,
-missing fingers, extra digit, fewer digits, cropped, worst quality,
-low quality, jpeg artifacts, signature, watermark, blurry"""
-    },
-    "Outdoor Portrait (Photorealistic)": {
-        "base_prompt": """professional photography, outdoor portrait, photorealistic, natural lighting,
-environmental portrait, {pose_description}
-golden hour lighting, bokeh background, 8k uhd, professional camera""",
-        "negative_prompt": """cartoon, anime, illustration, bad anatomy, bad hands,
-missing fingers, extra digit, fewer digits, cropped, worst quality,
-low quality, jpeg artifacts, signature, watermark, blurry"""
     }
 }
 
@@ -352,13 +378,45 @@ if uploaded_files:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Generate pose description and style prompt
-                pose_description = """full body pose, standing pose, looking at viewer,
-                precise pose matching the reference image"""
+            #Generate detailed prompt
+                def analyze_pose_and_generate_prompt(pose_image, style_config):
+                    """
+                    Analyze the pose image and generate a detailed prompt for image generation
+                    """
+                    # Pose description with comprehensive analysis
+                    pose_analysis = """
+Subject and Composition:
+- {precise pose details from stick figure}
+                    - exact limb positioning and joint angles maintained
+                    - accurate body proportions and balance points
+                    - dynamic pose with natural weight distribution
+                    - clear focal point on the character
 
-                style_config = styles[selected_style]
-                generation_prompt = style_config["base_prompt"].format(
-                    pose_description=pose_description
+Spatial Elements:
+- centered composition with proper depth
+- maintaining exact body orientation
+- precise perspective alignment
+- clear figure-ground relationship
+
+Technical Requirements:
+- anatomically correct joint angles
+- natural body mechanics
+- proper weight distribution
+- accurate limb proportions
+- clear pose readability
+"""
+
+                    # Create the complete prompt using the selected style
+                    complete_prompt = style_config["base_prompt"].format(
+                        pose_analysis=pose_analysis
+                    )
+
+                    return complete_prompt.strip()
+
+
+                generation_prompt = analyze_pose_and_generate_prompt(
+                    pose_image, 
+                    styles[selected_style]
                 )
                 st.text_area("Prompt", value=generation_prompt, height=100, disabled=True)
                 st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
