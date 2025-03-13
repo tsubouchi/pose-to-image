@@ -37,9 +37,8 @@ st.markdown("""
     overflow-y: auto;
 }
 
-.status-area {
+.status-section {
     margin-bottom: 10px;
-    padding: 5px;
 }
 
 .preview-area {
@@ -80,13 +79,6 @@ div[data-testid="stStatus"] {
     padding: 0.25rem !important;
     margin: 0.25rem 0 !important;
 }
-
-/* ヘッダーの調整 */
-h2 {
-    font-size: 1.1em !important;
-    margin: 0 0 8px 0 !important;
-    padding: 0 !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -124,35 +116,37 @@ with left_col:
 
 with right_col:
     st.markdown("## Generated Result")
-    st.markdown('<div class="result-section">', unsafe_allow_html=True)
 
     if pose_file and style_file:
         try:
-            # Pose Analysis Section
-            with st.expander("🔍 ポーズ解析の詳細", expanded=True):
-                with st.status("ポーズを解析中...") as status:
-                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                    if pose_result is None:
-                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                        st.stop()
-                    status.update(label="✅ ポーズの解析が完了", state="complete")
+            col1, col2 = st.columns(2)
 
-                    if pose_descriptions:
-                        st.markdown("**検出されたポーズの特徴:**")
-                        for key, value in pose_descriptions.items():
-                            if not key.endswith("_desc"):
-                                continue
-                            label = key.replace("_desc", "").replace("_", " ").title()
-                            st.markdown(f"- {label}: {value}")
+            # Status indicators in columns
+            with col1:
+                pose_status = st.status("🔍 ポーズを解析中...")
+                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                if pose_result is None:
+                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                    st.stop()
+                pose_status.update(label="✅ ポーズの解析が完了", state="complete")
 
-            # Image Generation Section
-            with st.expander("🎨 画像生成の詳細", expanded=True):
-                with st.status("画像を生成中...") as status:
-                    result_image = generate_image_with_style(pose_image, style_image)
-                    if result_image:
-                        status.update(label="✅ 画像の生成が完了", state="complete")
+            with col2:
+                gen_status = st.status("🎨 画像を生成中...")
+                result_image = generate_image_with_style(pose_image, style_image)
+                if result_image:
+                    gen_status.update(label="✅ 画像の生成が完了", state="complete")
 
-            # Preview Area for the generated image
+            # Details in expandable sections
+            with st.expander("ポーズ解析の詳細"):
+                if pose_descriptions:
+                    st.markdown("**検出されたポーズの特徴:**")
+                    for key, value in pose_descriptions.items():
+                        if not key.endswith("_desc"):
+                            continue
+                        label = key.replace("_desc", "").replace("_", " ").title()
+                        st.markdown(f"- {label}: {value}")
+
+            # Preview Area
             st.markdown('<div class="preview-area">', unsafe_allow_html=True)
             if result_image:
                 st.image(result_image, use_container_width=False)
@@ -173,8 +167,6 @@ with right_col:
             logger.error(f"Error processing images: {str(e)}")
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions
 with st.expander("💡 使い方"):

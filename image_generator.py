@@ -177,6 +177,14 @@ def generate_enhanced_prompt(analysis):
     Generate a detailed prompt based on the analysis
     """
     try:
+        if not analysis:
+            logger.error("Analysis result is None")
+            return {
+                "main_prompt": "masterpiece, best quality, highly detailed, maintain exact pose",
+                "negative_prompt": "wrong pose, low quality, blurry, distorted",
+                "parameters": {"cfg_scale": 7, "steps": 20}
+            }
+
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}"
 
         headers = {
@@ -186,28 +194,20 @@ def generate_enhanced_prompt(analysis):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": f"""Generate a Stable Diffusion prompt to recreate the EXACT pose from the first image while applying the COMPLETE style from the second image.
+                    "text": f"""Generate a Stable Diffusion prompt combining the pose from first image with style from second image.
 
-Analysis result:
+Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a prompt in this format:
+Return only this JSON structure:
 {{
-  "main_prompt": "masterpiece, best quality, highly detailed, (art style from reference), [clothing details], [pose description], [visual elements]",
+  "main_prompt": "masterpiece, best quality, highly detailed, (art style), [clothing], [pose], [effects]",
   "negative_prompt": "wrong pose, wrong style, low quality, blurry, distorted",
   "parameters": {{
     "cfg_scale": 7,
     "steps": 20
   }}
-}}
-
-Requirements:
-1. Art style: Use EXACTLY the style from the reference image
-2. Clothing: Include ALL clothing details from reference
-3. Pose: Keep EXACT pose from first image
-4. Add style elements from reference: lighting, effects, mood
-
-Return ONLY the JSON object, no additional text."""
+}}"""
                 }]
             }]
         }
@@ -225,7 +225,7 @@ Return ONLY the JSON object, no additional text."""
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
 
-        # Clean and parse JSON response
+        # Extract JSON content
         start = text_response.find('{')
         end = text_response.rfind('}') + 1
 
@@ -233,19 +233,22 @@ Return ONLY the JSON object, no additional text."""
             raise Exception("No JSON content found in response")
 
         json_content = text_response[start:end].strip()
-        prompt_data = json.loads(json_content)
 
-        # Validate required fields
-        if not all(key in prompt_data for key in ["main_prompt", "negative_prompt", "parameters"]):
-            raise Exception("Missing required fields in prompt data")
-
-        return prompt_data
+        # Parse and validate
+        try:
+            prompt_data = json.loads(json_content)
+            if not all(key in prompt_data for key in ["main_prompt", "negative_prompt", "parameters"]):
+                raise Exception("Missing required fields in prompt data")
+            return prompt_data
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse JSON: {json_content}")
+            raise
 
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
         # Return default prompt as fallback
         return {
-            "main_prompt": "masterpiece, best quality, highly detailed, maintain exact pose",
+            "main_prompt": "masterpiece, best quality, highly detailed, maintain exact pose, anime style",
             "negative_prompt": "wrong pose, low quality, blurry, distorted",
             "parameters": {"cfg_scale": 7, "steps": 20}
         }
