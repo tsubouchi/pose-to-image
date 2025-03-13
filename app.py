@@ -128,23 +128,24 @@ with right_col:
                 result_image = generate_image_with_style(pose_image, style_image)
                 if result_image:
                     status.update(label="✅ 画像の生成が完了", state="complete")
-                    # 生成完了直後に画像を表示
-                    st.markdown('<div class="generated-result">', unsafe_allow_html=True)
-                    st.image(result_image, width=300)
 
-                    # Download button
-                    buf = io.BytesIO()
-                    result_image.save(buf, format='PNG')
-                    st.download_button(
-                        label="💾 生成された画像をダウンロード",
-                        data=buf.getvalue(),
-                        file_name="generated_pose.png",
-                        mime="image/png",
-                        use_container_width=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
+            # 即時に画像を表示
+            st.markdown('<div class="generated-result">', unsafe_allow_html=True)
+            st.image(result_image, width=300)
 
-            # Pose Analysis Details
+            # Download button
+            buf = io.BytesIO()
+            result_image.save(buf, format='PNG')
+            st.download_button(
+                label="💾 生成された画像をダウンロード",
+                data=buf.getvalue(),
+                file_name="generated_pose.png",
+                mime="image/png",
+                use_container_width=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Pose Analysis Details at the bottom
             with st.expander("🔍 ポーズ解析の詳細"):
                 if pose_descriptions:
                     st.markdown("**検出されたポーズの特徴:**")
