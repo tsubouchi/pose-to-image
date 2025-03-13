@@ -264,7 +264,7 @@ def process_image(image, idx, cols):
                                 <span class="suggestion-text">🔍 {suggestion}</span>
                             </div>
                             """, unsafe_allow_html=True)
-                return True
+                return True, pose_image, pose_descriptions
             else:
                 st.error("""
                 ポーズの検出に失敗しました。以下をお試しください：
@@ -272,157 +272,164 @@ def process_image(image, idx, cols):
                 - 人物が画像の中心にいることを確認
                 - 人物全体が写っていることを確認
                 """)
-                return False
+                return False, None, None
 
     except Exception as e:
         st.error(f"画像処理中にエラーが発生しました: {str(e)}")
         logger.error(f"Error processing image: {str(e)}")
-        return False
+        return False, None, None
 
+def handle_image_processing():
+    """
+    Main function to handle image processing workflow
+    """
+    if uploaded_files:
+        try:
+            # Progress container
+            progress_container = st.container()
+            with progress_container:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
 
-# Process uploaded images
-if uploaded_files:
-    try:
-        # Progress container
-        progress_container = st.container()
-        with progress_container:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+            # Process each image
+            num_images = len(uploaded_files)
+            for idx, uploaded_file in enumerate(uploaded_files):
+                # Update progress
+                progress = (idx + 1) / num_images
+                progress_bar.progress(progress)
+                status_text.text(f"Processing image {idx + 1} of {num_images}")
 
-        # Process each image
-        num_images = len(uploaded_files)
-        for idx, uploaded_file in enumerate(uploaded_files):
-            # Update progress
-            progress = (idx + 1) / num_images
-            progress_bar.progress(progress)
-            status_text.text(f"Processing image {idx + 1} of {num_images}")
-
-            # Create image set container
-            with st.container():
-                st.markdown(f"""
-                <div class="image-card">
-                    <div class="step-header">
-                        <div class="status-badge">Image Set {idx + 1}</div>
-                        <div class="meta-info">Processing Time: {idx * 2 + 5}s</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-                # Create columns for display
-                cols = st.columns([1, 1, 1, 1, 1])
-
-                # Step 1: Original Image
-                with cols[0]:
-                    st.markdown("""
-                    <div class="step-header">
-                        <div class="step-icon">1</div>
-                        <h3>Original Image</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    image = Image.open(uploaded_file)
-                    st.image(image, use_container_width=True)
-
-                # Step 2-5:  Use the new process_image function
-                if not process_image(image, idx, cols):
-                    continue #skip to the next image if processing failed
-
-                # Step 3: Generation Prompt (moved here since process_image handles pose extraction)
-                with cols[2]:
-                    st.markdown("""
-                    <div class="step-header">
-                        <div class="step-icon">3</div>
-                        <h3>Generation Prompt</h3>
-                    </div>
+                # Create image set container
+                with st.container():
+                    st.markdown(f"""
+                    <div class="image-card">
+                        <div class="step-header">
+                            <div class="status-badge">Image Set {idx + 1}</div>
+                            <div class="meta-info">Processing Time: {idx * 2 + 5}s</div>
+                        </div>
                     """, unsafe_allow_html=True)
 
-                    generation_prompt = styles[selected_style]["base_prompt"]
-                    st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
-                    st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
+                    # Create columns for display
+                    cols = st.columns([1, 1, 1, 1, 1])
 
-                # Step 4: OpenPose Generation
-                with cols[3]:
-                    st.markdown("""
-                    <div class="step-header">
-                        <div class="step-icon">4</div>
-                        <h3>OpenPose Generation</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    try:
-                        openpose_image = generate_controlnet_openpose(
-                            pose_image,
-                            generation_prompt
-                        )
-                        if openpose_image is not None:
-                            st.image(openpose_image, use_container_width=True)
-                            st.markdown('<div class="tag">OpenPose Generated</div>', unsafe_allow_html=True)
-                        else:
-                            st.error("Failed to generate OpenPose image")
-                            continue
-                    except Exception as e:
-                        st.error(f"Error in OpenPose generation: {str(e)}")
-                        logger.error(f"Error in OpenPose generation: {str(e)}")
+                    # Step 1: Original Image
+                    with cols[0]:
+                        st.markdown("""
+                        <div class="step-header">
+                            <div class="step-icon">1</div>
+                            <h3>Original Image</h3>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        image = Image.open(uploaded_file)
+                        st.image(image, use_container_width=True)
+
+                    # Step 2-5: Process the image
+                    success, pose_image, pose_descriptions = process_image(image, idx, cols)
+                    if not success:
                         continue
 
-                # Step 5: Final Generation
-                with cols[4]:
-                    st.markdown("""
-                    <div class="step-header">
-                        <div class="step-icon">5</div>
-                        <h3>Final Result</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    try:
-                        if generation_mode == "Single Image":
-                            final_image = generate_image(
-                                openpose_image,
-                                generation_prompt,
-                                "Convert to high quality anime while preserving pose"
+                    # Step 3: Generation Prompt
+                    with cols[2]:
+                        st.markdown("""
+                        <div class="step-header">
+                            <div class="step-icon">3</div>
+                            <h3>Generation Prompt</h3>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        generation_prompt = styles[selected_style]["base_prompt"]
+                        st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
+                        st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
+
+                    # Step 4: OpenPose Generation
+                    with cols[3]:
+                        st.markdown("""
+                        <div class="step-header">
+                            <div class="step-icon">4</div>
+                            <h3>OpenPose Generation</h3>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        try:
+                            openpose_image = generate_controlnet_openpose(
+                                pose_image,
+                                generation_prompt
                             )
-                            if final_image is not None:
-                                st.image(final_image, use_container_width=True)
-                                st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
+                            if openpose_image is not None:
+                                st.image(openpose_image, use_container_width=True)
+                                st.markdown('<div class="tag">OpenPose Generated</div>', unsafe_allow_html=True)
+                            else:
+                                st.error("Failed to generate OpenPose image")
+                                continue
+                        except Exception as e:
+                            st.error(f"Error in OpenPose generation: {str(e)}")
+                            logger.error(f"Error in OpenPose generation: {str(e)}")
+                            continue
 
-                                # Add download button
-                                buf = io.BytesIO()
-                                final_image.save(buf, format='PNG')
-                                st.download_button(
-                                    label="Download Image",
-                                    data=buf.getvalue(),
-                                    file_name=f"generated_image_{idx+1}.png",
-                                    mime="image/png",
-                                    use_container_width=True
+                    # Step 5: Final Generation
+                    with cols[4]:
+                        st.markdown("""
+                        <div class="step-header">
+                            <div class="step-icon">5</div>
+                            <h3>Final Result</h3>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        try:
+                            if generation_mode == "Single Image":
+                                final_image = generate_image(
+                                    openpose_image,
+                                    generation_prompt,
+                                    "Convert to high quality anime while preserving pose"
                                 )
-                        else:  # Video mode
-                            video_path = generate_video(
-                                [openpose_image],
-                                generation_prompt,
-                                fps=fps,
-                                duration=duration
-                            )
-                            if video_path:
-                                with open(video_path, 'rb') as video_file:
-                                    video_bytes = video_file.read()
-                                st.video(video_bytes)
-                                st.markdown('<div class="tag">Video Generated</div>', unsafe_allow_html=True)
-                                st.download_button(
-                                    label="Download Video",
-                                    data=video_bytes,
-                                    file_name=f"generated_video_{idx+1}.mp4",
-                                    mime="video/mp4",
-                                    use_container_width=True
+                                if final_image is not None:
+                                    st.image(final_image, use_container_width=True)
+                                    st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
+
+                                    # Add download button
+                                    buf = io.BytesIO()
+                                    final_image.save(buf, format='PNG')
+                                    st.download_button(
+                                        label="Download Image",
+                                        data=buf.getvalue(),
+                                        file_name=f"generated_image_{idx+1}.png",
+                                        mime="image/png",
+                                        use_container_width=True
+                                    )
+                            else:  # Video mode
+                                video_path = generate_video(
+                                    [openpose_image],
+                                    generation_prompt,
+                                    fps=fps,
+                                    duration=duration
                                 )
-                    except Exception as gen_error:
-                        st.error(f"Error in final generation: {str(gen_error)}")
-                        logger.error(f"Error in final generation: {str(gen_error)}")
+                                if video_path:
+                                    with open(video_path, 'rb') as video_file:
+                                        video_bytes = video_file.read()
+                                    st.video(video_bytes)
+                                    st.markdown('<div class="tag">Video Generated</div>', unsafe_allow_html=True)
+                                    st.download_button(
+                                        label="Download Video",
+                                        data=video_bytes,
+                                        file_name=f"generated_video_{idx+1}.mp4",
+                                        mime="video/mp4",
+                                        use_container_width=True
+                                    )
+                        except Exception as gen_error:
+                            st.error(f"Error in final generation: {str(gen_error)}")
+                            logger.error(f"Error in final generation: {str(gen_error)}")
 
-                st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-        # Clear progress indicators
-        progress_bar.empty()
-        status_text.success(f"Successfully processed {num_images} images!")
+            # Clear progress indicators
+            progress_bar.empty()
+            status_text.success(f"Successfully processed {num_images} images!")
 
-    except Exception as e:
-        st.error(f"Error processing images: {str(e)}")
-        logger.exception(f"Error processing images: {str(e)}")
+        except Exception as e:
+            st.error(f"Error processing images: {str(e)}")
+            logger.exception(f"Error processing images: {str(e)}")
+
+# Call the main processing function when files are uploaded
+if uploaded_files:
+    handle_image_processing()
 
 # Instructions
 st.markdown("""
