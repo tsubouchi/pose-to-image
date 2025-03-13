@@ -173,17 +173,17 @@ def generate_image_with_style(pose_image, style_image):
             raise Exception("Failed to generate enhanced prompt")
 
         # Parse prompt data
-        try:
-            prompt_data = json.loads(prompt_data)
-        except:
-            # Fallback if JSON parsing fails
-            logger.warning("Failed to parse JSON, using text extraction")
-            lines = prompt_data.split('\n')
-            prompt_data = {
-                "main_prompt": next((l for l in lines if "masterpiece" in l), "masterpiece, best quality"),
-                "negative_prompt": next((l for l in lines if "low quality" in l), "NSFW, low quality"),
-                "parameters": {"cfg_scale": 7, "steps": 20}
-            }
+        if isinstance(prompt_data, str):
+            try:
+                prompt_data = json.loads(prompt_data)
+            except:
+                # Fallback if JSON parsing fails
+                logger.warning("Failed to parse JSON, using text extraction")
+                prompt_data = {
+                    "main_prompt": "masterpiece, best quality, maintain exact pose from reference image",
+                    "negative_prompt": "NSFW, low quality, blurry, distorted",
+                    "parameters": {"cfg_scale": 7, "steps": 20}
+                }
 
         # API endpoint for ultra generation
         host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
