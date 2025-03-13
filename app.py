@@ -168,7 +168,7 @@ with right_col:
 
             # 即時に画像を表示
             st.markdown('<div class="generated-result">', unsafe_allow_html=True)
-            st.image(result_image, width=300, use_column_width=True)
+            st.image(result_image, width=300, use_container_width=True)
 
             # Download button
             buf = io.BytesIO()
