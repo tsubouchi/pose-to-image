@@ -25,6 +25,8 @@ st.markdown("""
     box-shadow: 0 2px 12px rgba(255,255,255,0.03);
     margin-bottom: 15px;
     border: 1px solid #333;
+    position: relative;
+    overflow: hidden;
 }
 
 .status-badge {
@@ -104,11 +106,6 @@ st.markdown("""
 }
 
 /* Add grid background animation */
-.image-card {
-    position: relative;
-    overflow: hidden;
-}
-
 .image-card::before {
     content: '';
     position: absolute;
@@ -157,6 +154,21 @@ st.markdown("""
 .stTextArea textarea {
     min-height: 100px !important;
     font-size: 12px !important;
+}
+
+/* Suggestion item styling */
+.suggestion-item {
+    background-color: rgba(25, 118, 210, 0.05);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    font-size: 12px;
+    color: #64b5f6;
+}
+
+.suggestion-text {
+    display: block;
+    line-height: 1.4;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -250,10 +262,28 @@ if uploaded_files:
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        pose_image, pose_descriptions = extract_pose(image)
+                        pose_image, pose_descriptions, results = extract_pose(image) #modified to return results
                         if pose_image is not None:
                             st.image(pose_image, use_container_width=True)
                             st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
+
+                            # Add pose refinement suggestions
+                            if results and results.pose_landmarks:
+                                suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
+
+                                st.markdown("""
+                                <div class="step-header">
+                                    <h4>AI Pose Suggestions</h4>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                                for key, suggestion in suggestions.items():
+                                    if key != "error":
+                                        st.markdown(f"""
+                                        <div class="suggestion-item">
+                                            <span class="suggestion-text">🔍 {suggestion}</span>
+                                        </div>
+                                        """, unsafe_allow_html=True)
                         else:
                             st.error("Error in pose extraction, using default pose")
                             pose_image = Image.new('RGB', (100,100)) #placeholder image
@@ -513,3 +543,21 @@ st.markdown("""
    - Step 5: Final Style Generation
 4. Download generated images using the download buttons
 """)
+
+def get_pose_refinement_suggestions(pose_landmarks):
+    # Placeholder for actual pose refinement logic.  Replace with your implementation
+    # This function should analyze pose_landmarks and return a dictionary of suggestions
+    # Example:  {"right_shoulder": "Try to straighten your right shoulder", "left_elbow": "Bend your left elbow slightly more"}
+    #  return {"error": "Pose refinement not yet implemented"} #For testing
+    suggestions = {}
+    for landmark in pose_landmarks:
+        if landmark.x < 0.3:
+            suggestions["left_side"] = "Move to the right"
+        elif landmark.x > 0.7:
+            suggestions["right_side"] = "Move to the left"
+        if landmark.y < 0.3:
+            suggestions["upper_body"] = "Stand up straight"
+        elif landmark.y > 0.7:
+            suggestions["lower_body"] = "Bend your knees slightly"
+
+    return suggestions

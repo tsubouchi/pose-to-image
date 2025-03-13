@@ -325,3 +325,109 @@ def create_enhanced_stick_figure(results, image_shape, thickness_multiplier=2.0)
     )
 
     return canvas
+
+
+def analyze_pose_balance(landmarks) -> Dict[str, float]:
+    """
+    Analyze pose balance and symmetry
+    """
+    try:
+        # Convert landmarks to numpy arrays
+        points = {}
+        for idx, landmark in enumerate(landmarks.landmark):
+            points[idx] = np.array([landmark.x, landmark.y, landmark.z])
+
+        # Calculate symmetry scores
+        symmetry_scores = {
+            "shoulders": calculate_symmetry(
+                points[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value],
+                points[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value]
+            ),
+            "elbows": calculate_symmetry(
+                points[mp.solutions.pose.PoseLandmark.RIGHT_ELBOW.value],
+                points[mp.solutions.pose.PoseLandmark.LEFT_ELBOW.value]
+            ),
+            "hips": calculate_symmetry(
+                points[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value],
+                points[mp.solutions.pose.PoseLandmark.LEFT_HIP.value]
+            ),
+            "knees": calculate_symmetry(
+                points[mp.solutions.pose.PoseLandmark.RIGHT_KNEE.value],
+                points[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value]
+            )
+        }
+        return symmetry_scores
+    except Exception as e:
+        logger.error(f"Error analyzing pose balance: {str(e)}")
+        return {}
+
+def calculate_symmetry(right_point: np.ndarray, left_point: np.ndarray) -> float:
+    """
+    Calculate symmetry score between two points
+    """
+    try:
+        # Calculate distance from center
+        center = (right_point + left_point) / 2
+        right_dist = np.linalg.norm(right_point - center)
+        left_dist = np.linalg.norm(left_point - center)
+
+        # Calculate symmetry score (1.0 = perfect symmetry)
+        max_dist = max(right_dist, left_dist)
+        if max_dist == 0:
+            return 1.0
+        symmetry = 1.0 - abs(right_dist - left_dist) / max_dist
+        return symmetry
+    except Exception as e:
+        logger.error(f"Error calculating symmetry: {str(e)}")
+        return 1.0
+
+def generate_pose_suggestions(symmetry_scores: Dict[str, float], angles: Dict[str, float]) -> Dict[str, str]:
+    """
+    Generate pose improvement suggestions based on analysis
+    """
+    suggestions = {}
+
+    try:
+        # Analyze symmetry
+        for part, score in symmetry_scores.items():
+            if score < 0.85:  # Less than 85% symmetry
+                suggestions[f"{part}_symmetry"] = f"Consider adjusting {part} alignment for better balance"
+
+        # Analyze joint angles
+        if angles.get("spine", 90) < 70:
+            suggestions["spine"] = "Consider straightening your spine for better posture"
+
+        if angles.get("right_knee", 180) < 160 and angles.get("left_knee", 180) < 160:
+            suggestions["knees"] = "Deep knee bend detected - ensure stable balance"
+
+        if angles.get("right_elbow", 180) < 90 or angles.get("left_elbow", 180) < 90:
+            suggestions["elbows"] = "Sharp elbow bend - check arm positioning"
+
+        # Add general suggestions
+        if len(suggestions) == 0:
+            suggestions["general"] = "Pose looks well balanced! Consider experimenting with different expressions or hand positions."
+
+        return suggestions
+    except Exception as e:
+        logger.error(f"Error generating suggestions: {str(e)}")
+        return {"error": "Unable to generate pose suggestions"}
+
+def get_pose_refinement_suggestions(landmarks) -> Dict[str, str]:
+    """
+    Main function to analyze pose and provide refinement suggestions
+    """
+    try:
+        if landmarks is None:
+            return {"error": "No pose detected"}
+
+        # Get pose measurements
+        angles = calculate_joint_angles(landmarks)
+        symmetry_scores = analyze_pose_balance(landmarks)
+
+        # Generate suggestions
+        suggestions = generate_pose_suggestions(symmetry_scores, angles)
+
+        return suggestions
+    except Exception as e:
+        logger.error(f"Error in pose refinement analysis: {str(e)}")
+        return {"error": "Failed to analyze pose"}
