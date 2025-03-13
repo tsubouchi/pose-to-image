@@ -14,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for modern dark mode design
 st.markdown("""
 <style>
 .stApp {
@@ -24,71 +23,60 @@ st.markdown("""
 
 .input-section {
     background-color: #0a0a0a;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 10px;
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom: 8px;
     border: 1px solid #333;
-    max-height: calc(25vh - 20px);
-    overflow: hidden;
 }
 
 .result-container {
     background-color: #1a1a1a;
     border-radius: 8px;
-    padding: 15px;
-    height: calc(90vh - 100px);
-    overflow-y: auto;
+    padding: 10px;
+    height: 90vh;
 }
 
 .upload-header {
-    font-size: 1.1em;
-    font-weight: 500;
-    margin-bottom: 5px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #333;
+    font-size: 0.9em;
+    margin-bottom: 2px;
+    color: #ccc;
 }
 
-.processing-status {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 4px;
-    background-color: rgba(25, 118, 210, 0.05);
-}
-
-.stImage {
-    max-height: calc(13vh) !important;
-}
-
-div[data-testid="stImage"] {
-    text-align: center;
-}
-
-div[data-testid="stImage"] > img {
-    max-height: calc(13vh);
-    width: auto !important;
-}
-
-/* ファイルアップローダーのサイズ調整 */
+/* アップローダーのサイズ調整 */
 div[data-testid="stFileUploader"] {
-    padding: 0.5rem;
-}
-
-div[data-testid="stFileUploader"] > div > div {
     padding: 0.25rem;
 }
 
-/* 画像サイズを1/3に縮小 */
+div[data-testid="stFileUploader"] > div > div {
+    padding: 0.15rem;
+}
+
+/* 画像サイズの調整 */
 div[data-testid="stImage"] img {
     max-width: 33% !important;
     max-height: auto !important;
     display: block;
     margin: 0 auto;
 }
+
+/* ヘッダーの調整 */
+h2 {
+    font-size: 1.1em !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+}
+
+/* 説明テキストの調整 */
+div.stMarkdown p {
+    font-size: 0.9em;
+    margin: 0;
+    padding: 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # Create main layout with two columns
-left_col, right_col = st.columns([1, 1], gap="large")
+left_col, right_col = st.columns([1, 1], gap="small")
 
 with left_col:
     st.markdown("## Input Images")
@@ -97,7 +85,7 @@ with left_col:
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
     st.markdown('<div class="upload-header">ポーズ参照画像</div>', unsafe_allow_html=True)
     pose_file = st.file_uploader(
-        "再現したいポーズが写っている画像をアップロード",
+        "再現したいポーズの画像",
         type=['png', 'jpg', 'jpeg'],
         key="pose_upload"
     )
@@ -110,7 +98,7 @@ with left_col:
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
     st.markdown('<div class="upload-header">スタイル参照画像</div>', unsafe_allow_html=True)
     style_file = st.file_uploader(
-        "目標とする画風や洋服の画像をアップロード",
+        "目標とする画風や洋服の画像",
         type=['png', 'jpg', 'jpeg'],
         key="style_upload"
     )
@@ -160,28 +148,28 @@ with right_col:
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.markdown("""
-        <div class="result-container" style="text-align: center; padding: 40px;">
-            <p>画像を生成するには、左側で2つの画像をアップロードしてください：</p>
-            <ol style="text-align: left; display: inline-block;">
-                <li>ポーズ参照画像：再現したいポーズが写っている画像</li>
-                <li>スタイル参照画像：目標とする画風や洋服の画像</li>
-            </ol>
+        <div class="result-container">
+            <p>2つの画像をアップロードしてください：</p>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>ポーズ参照画像：再現したいポーズ</li>
+                <li>スタイル参照画像：目標とする画風や洋服</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
 
-# Instructions
+# Instructions (Minor text adjustments)
 st.markdown("""
 ---
 ### 使い方:
 1. ポーズ参照画像をアップロード
-   - 再現したいポーズが写っている画像を選択
-   - 人物が明確に写っている画像を使用
+   - 再現したいポーズの画像を選択してください
+   - 人物がはっきりと写っている画像を使用するのがおすすめです
 
 2. スタイル参照画像をアップロード
-   - 目標とする画風の画像を選択
-   - キャラクターデザインや画風が明確な画像を使用
+   - 目標とする画風の画像を選択してください
+   - キャラクターデザインや画風が明確な画像を使用するのがおすすめです
 
 3. 生成された画像を確認
-   - AIが2つの画像を組み合わせて新しい画像を生成
-   - 必要に応じてダウンロード可能
+   - AIが2つの画像を組み合わせて新しい画像を生成します
+   - 必要に応じてダウンロードできます
 """)
