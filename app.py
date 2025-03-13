@@ -181,62 +181,58 @@ with st.sidebar:
     st.header("System Settings")
     system_prompt = st.text_area(
         "System Prompt",
-        value=st.session_state.system_prompt if 'system_prompt' in st.session_state else """
-        CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
-        0. Subject Count and Composition:
-        - The input stick figure shows ONE person
-        - Generate EXACTLY one person in the output
-        - NO additional people in backgrounds or reflections
-        - Place the subject centrally as the clear focal point
+        value="""CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
 
-        1. Anatomical Reference Points:
-        Head:
-        - Match head orientation and tilt exactly
-        - Align gaze direction with head position
-        - Maintain neck angle and length precisely
+1. Pose Accuracy Requirements:
+- Match EVERY joint position with the stick figure EXACTLY
+- Preserve ALL angles between limbs precisely
+- Maintain the EXACT body orientation and tilt
+- Keep the same weight distribution and balance point
 
-        Torso:
-        - Preserve shoulder width and chest cavity ratio
-        - Replicate spine curvature and inclination exactly
-        - Maintain hip position and angle strictly
+2. Joint-by-Joint Alignment:
+Head/Neck:
+- Copy head tilt and orientation
+- Match neck angle precisely
 
-        Limbs:
-        - Reproduce exact angles for all joints (shoulders, elbows, wrists, hips, knees, ankles)
-        - Keep arm and leg length ratios consistent
-        - Maintain precise limb orientation and rotation
+Arms:
+- Replicate shoulder joint angles
+- Match elbow bend degree
+- Copy wrist positions
+- Keep arm length proportions
 
-        2. Spatial Relationships:
-        - Preserve depth positioning (limbs in front/behind)
-        - Maintain exact left-right positioning
-        - Match body rotation and tilt angles precisely
-        - Keep center of gravity and balance points aligned
+Legs:
+- Match hip joint positioning
+- Copy knee bend angles
+- Replicate ankle positions
+- Preserve leg length ratios
 
-        3. Implementation Requirements:
-        - Select anatomically correct joint angles within natural range
-        - Apply appropriate perspective based on body orientation
-        - Maintain accurate overlap and occlusion of body parts
-        - Ensure natural movement dynamics and physics
+Torso:
+- Match spine curvature
+- Keep the same hip alignment
+- Replicate shoulder width
+- Maintain torso twist angle
 
-        4. Verification Points:
-        - Confirm all joints match stick figure positions
-        - Verify body proportions are maintained
-        - Check center of gravity placement
-        - Ensure anatomical constraints are respected
-        - Verify only ONE person in the entire image
-        - Confirm NO people in backgrounds
-        - Check for NO people in mirrors/reflections
+3. Spatial Requirements:
+- Keep ALL limb positions relative to center
+- Match front/back positioning of limbs
+- Preserve left/right placement exactly
+- Maintain ground contact points
 
-        5. Generation Process:
-        1) First verify single subject requirement
-        2) Align skeleton precisely with stick figure
-        3) Build muscles and body type on skeleton
-        4) Add clothing and accessories last
-        5) Keep background minimal and supporting
+4. Critical Rules:
+- NO deviation from stick figure pose
+- NO artistic interpretation of positions
+- NO adjusting for style over accuracy
+- EXACT match to reference required
 
-        This instruction set has ABSOLUTE priority.
-        Prioritize pose accuracy and subject count over style and decoration.
-        Keep environmental elements minimal, focusing on pose and expression.
-        """,
+Review process:
+1. Check joint angles match reference
+2. Verify limb positions are exact
+3. Confirm body orientation
+4. Ensure pose is physically accurate
+
+This is a TECHNICAL SPECIFICATION, not a suggestion.
+Accuracy to reference is the highest priority.
+""",
         height=300
     )
     if 'system_prompt' not in st.session_state or system_prompt != st.session_state.system_prompt:
