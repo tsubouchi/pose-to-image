@@ -29,20 +29,8 @@ st.markdown("""
     margin: 0 auto;
 }
 
-.generated-result {
-    background-color: #0a0a0a;
-    border-radius: 8px;
-    padding: 1px;
-    margin-top: 0px;
-    min-height: 280px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
 /* 生成結果の画像サイズ調整 */
-.generated-result div[data-testid="stImage"] {
+div[data-testid="stImage"] {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -50,7 +38,7 @@ st.markdown("""
     margin: 0 !important;
 }
 
-.generated-result div[data-testid="stImage"] img {
+div[data-testid="stImage"] img {
     max-width: 100% !important;
     height: 280px !important;
     object-fit: contain !important;
@@ -128,17 +116,6 @@ div.element-container {
     padding: 0 !important;
 }
 
-/* 生成結果エリアのサイズ固定 */
-div.generated-result {
-    width: 375px !important;
-    height: 280px !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
 /* マークダウンの余白を削除 */
 div.css-1629p8f {
     margin: 0 !important;
@@ -198,7 +175,6 @@ with right_col:
 
             # 即時に画像を表示
             if result_image is not None:
-                st.markdown('<div class="generated-result">', unsafe_allow_html=True)
                 st.image(result_image, use_container_width=True)
 
                 # Download button
@@ -211,7 +187,6 @@ with right_col:
                     mime="image/png",
                     use_container_width=True
                 )
-                st.markdown('</div>', unsafe_allow_html=True)
 
             # ポーズの改善提案を表示
             with st.status("🔍 ポーズを分析中...") as status:
@@ -266,9 +241,7 @@ with right_col:
             st.error(f"エラーが発生しました: {str(e)}")
             logger.error(f"Error processing images: {str(e)}")
     else:
-        st.markdown('<div class="generated-result">', unsafe_allow_html=True)
         st.info("👈 左側で2つの画像をアップロードしてください")
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions at the bottom
 with st.expander("💡 使い方"):
