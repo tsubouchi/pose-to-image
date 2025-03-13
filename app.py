@@ -353,39 +353,42 @@ Priority: Accuracy of pose over visual aesthetics"""
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # Second pass: Apply anime style while maintaining pose
-                        style_prompt = f"""masterpiece, best quality, highly detailed anime illustration,
+                        # Second pass: Apply anime style while preserving exact pose
+                        style_prompt = f"""CRITICAL: Exact pose preservation is the highest priority.
 
-POSE ACCURACY IS CRITICAL:
-1. Upper Body:
-- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
-- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
-- {pose_descriptions['spine_desc']}
+Follow these steps in order:
+1. First, copy the EXACT pose from the reference image:
+   - Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
+   - Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
+   - {pose_descriptions['spine_desc']}
+   - Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
+   - Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
 
-2. Lower Body:
-- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
-- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
+2. Then, maintain these elements while applying style:
+   - Keep ALL joint angles unchanged
+   - Preserve ALL limb positions exactly
+   - Match ALL body proportions precisely
+   - Maintain center of gravity position
+   - Keep the same weight distribution
 
-Style Requirements:
-- High quality anime art style
-- School uniform with pleated skirt and sailor collar
-- Natural indoor lighting with soft shadows
-- Classroom environment background
-- Clear facial features and detailed eyes
-- Clean lineart and professional shading
+3. Only after pose is perfect, apply:
+   - High quality anime art style
+   - School uniform (sailor style with pleated skirt)
+   - Natural classroom lighting
+   - Clean line art and professional shading
+   - Detailed character features
 
-Critical Instructions:
-- NO deviation from the reference pose
-- Keep ALL joint angles identical
-- Maintain exact body proportions
-- Preserve balance and weight distribution
-- Ensure perfect pose symmetry
-- Match every body part position precisely"""
+Remember:
+- NO pose modification allowed
+- Exact pose matching is crucial
+- Style must not affect pose accuracy
+
+masterpiece, best quality, highly detailed anime illustration"""
 
                         final_image = generate_image(
                             human_pose,
                             style_prompt,
-                            "Perfect pose accuracy required, maintain exact joint positions while applying anime style"
+                            "Reference pose must be matched perfectly, no artistic interpretation of pose allowed"
                         )
                         if final_image is not None:
                             st.image(final_image, use_container_width=True)
