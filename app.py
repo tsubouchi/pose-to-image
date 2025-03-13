@@ -21,61 +21,61 @@ if 'generated_image' not in st.session_state:
     st.session_state.generated_image = None
 if 'system_prompt' not in st.session_state:
     st.session_state.system_prompt = """
-    重要: この棒人間は正確な人体の座標系を表現しています。以下の指示を厳密に守って画像を生成してください。
+    CRITICAL: This stick figure represents a precise human coordinate system. Follow these instructions strictly.
 
-    0. 人数の制御と構図:
-    - 入力画像の棒人間は1人です
-    - 出力画像でも必ず1人のみを生成すること
-    - 背景の人物や反射した人物も含めて、画像内の人物は1人限定
-    - 人物を画面中央に配置し、明確な主体として表現
+    0. Subject Count and Composition:
+    - The input stick figure shows ONE person
+    - Generate EXACTLY one person in the output
+    - NO additional people in backgrounds or reflections
+    - Place the subject centrally as the clear focal point
 
-    1. 解剖学的な参照ポイント:
-    頭部:
-    - 頭の向きと傾きを棒人間と完全に一致させる
-    - 視線の方向を頭の向きに合わせる
-    - 首の角度と長さを維持
+    1. Anatomical Reference Points:
+    Head:
+    - Match head orientation and tilt exactly
+    - Align gaze direction with head position
+    - Maintain neck angle and length precisely
 
-    胴体:
-    - 肩幅と胸郭の比率を維持
-    - 背骨の曲がりと傾きを正確に反映
-    - 腰の位置と角度を厳守
+    Torso:
+    - Preserve shoulder width and chest cavity ratio
+    - Replicate spine curvature and inclination exactly
+    - Maintain hip position and angle strictly
 
-    四肢:
-    - 各関節（肩、肘、手首、股関節、膝、足首）の角度を正確に再現
-    - 腕と脚の長さの比率を維持
-    - 手足の向きと捻りを忠実に表現
+    Limbs:
+    - Reproduce exact angles for all joints (shoulders, elbows, wrists, hips, knees, ankles)
+    - Keep arm and leg length ratios consistent
+    - Maintain precise limb orientation and rotation
 
-    2. 空間的位置関係:
-    - 前後の奥行きを維持（手足が前に出ているか後ろにあるか）
-    - 左右の位置関係を正確に保持
-    - 体の捻りや傾きの角度を厳密に守る
-    - 重心線を維持し、バランスを保つ
+    2. Spatial Relationships:
+    - Preserve depth positioning (limbs in front/behind)
+    - Maintain exact left-right positioning
+    - Match body rotation and tilt angles precisely
+    - Keep center of gravity and balance points aligned
 
-    3. 詳細な実装要件:
-    - 各関節の曲がり方は解剖学的に自然な範囲内で最も近い角度を選択
-    - 体の向きに応じて適切な遠近感を適用
-    - 各部位の重なりと隠れを正確に表現
-    - 動きの方向性と力学的な自然さを維持
+    3. Implementation Requirements:
+    - Select anatomically correct joint angles within natural range
+    - Apply appropriate perspective based on body orientation
+    - Maintain accurate overlap and occlusion of body parts
+    - Ensure natural movement dynamics and physics
 
-    4. エラーチェックポイント:
-    - 全ての関節が棒人間の位置と一致しているか
-    - 体の比率が維持されているか
-    - 重心が正しい位置にあるか
-    - 解剖学的な制約が守られているか
-    - 画像内の人物が1人であることを確認
-    - 背景に人物が含まれていないことを確認
-    - 鏡や反射に人物が映っていないことを確認
+    4. Verification Points:
+    - Confirm all joints match stick figure positions
+    - Verify body proportions are maintained
+    - Check center of gravity placement
+    - Ensure anatomical constraints are respected
+    - Verify only ONE person in the entire image
+    - Confirm NO people in backgrounds
+    - Check for NO people in mirrors/reflections
 
-    5. 生成プロセス:
-    1) まず人数を確認し、1人であることを保証
-    2) 骨格を棒人間と完全に一致させる
-    3) その骨格に基づいて筋肉と体型を構築
-    4) 最後に服装や装飾を追加
-    5) 背景は人物を引き立てる程度に抑える
+    5. Generation Process:
+    1) First verify single subject requirement
+    2) Align skeleton precisely with stick figure
+    3) Build muscles and body type on skeleton
+    4) Add clothing and accessories last
+    5) Keep background minimal and supporting
 
-    この指示は絶対的な優先順位を持ちます。スタイルや装飾よりも、
-    ポーズの正確な再現と人数の制御を最優先してください。
-    背景や環境要素は控えめに扱い、人物の姿勢と表現に焦点を当ててください。
+    This instruction set has ABSOLUTE priority.
+    Prioritize pose accuracy and subject count over style and decoration.
+    Keep environmental elements minimal, focusing on pose and expression.
     """
 
 # スタイル選択のオプション
