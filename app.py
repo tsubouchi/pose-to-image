@@ -103,7 +103,7 @@ with col1:
     pose_file = st.file_uploader("Upload an image with the pose you want to recreate", type=['png', 'jpg', 'jpeg'], key="pose_upload")
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image, caption="Pose Image", use_column_width=True)
+        st.image(pose_image, caption="Pose Image", use_container_width=True)
 
 with col2:
     st.markdown("""
@@ -115,7 +115,7 @@ with col2:
     style_file = st.file_uploader("Upload an image with the style you want to apply", type=['png', 'jpg', 'jpeg'], key="style_upload")
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image, caption="Style Image", use_column_width=True)
+        st.image(style_image, caption="Style Image", use_container_width=True)
 
 # Process images when both are uploaded
 if pose_file and style_file:
@@ -131,7 +131,7 @@ if pose_file and style_file:
 
         if result_image:
             st.markdown('<div class="result-container">', unsafe_allow_html=True)
-            st.image(result_image, caption="Generated Image", use_column_width=True)
+            st.image(result_image, caption="Generated Image", use_container_width=True)
 
             # Add download button
             buf = io.BytesIO()

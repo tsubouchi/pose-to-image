@@ -5,6 +5,7 @@ import tempfile
 from PIL import Image
 import requests
 import io
+import google.generativeai as genai
 
 # Initialize logging
 logging.basicConfig(
@@ -13,24 +14,129 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Stability API configuration
+# API configuration
 STABILITY_KEY = os.getenv("STABILITY_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Configure Gemini
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-pro-vision')
+
+def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
+    """
+    Use Gemini to analyze both images and generate detailed descriptions
+    """
+    try:
+        # Convert images to format compatible with Gemini
+        pose_bytes = io.BytesIO()
+        style_bytes = io.BytesIO()
+        pose_image.save(pose_bytes, format='PNG')
+        style_image.save(style_bytes, format='PNG')
+
+        # Create prompt for image analysis
+        prompt = """
+        分析目的：
+        1. ポーズ画像の姿勢とポーズの詳細な分析
+        2. スタイル画像の視覚的特徴とアートスタイルの分析
+
+        分析内容：
+        1. ポーズ画像について：
+        - 体の向きと姿勢
+        - 手足の位置と角度
+        - 全体的なバランス
+        - 特徴的なポーズの要素
+
+        2. スタイル画像について：
+        - アートスタイルの特徴
+        - 色使いとトーン
+        - 線の使い方や質感
+        - 光と影の表現
+        - 独特の視覚効果
+
+        出力形式：
+        以下のセクションに分けて詳細に記述してください：
+        - pose_details：ポーズの詳細な説明
+        - style_elements：スタイル要素の説明
+        - key_points：特に重要な要素のリスト
+        - generation_tips：画像生成時の重要なポイント
+        """
+
+        # Get analysis from Gemini
+        response = model.generate_content([
+            prompt,
+            pose_bytes.getvalue(),
+            style_bytes.getvalue()
+        ])
+
+        return response.text
+
+    except Exception as e:
+        logger.error(f"Error in Gemini analysis: {str(e)}")
+        return None
+
+def generate_enhanced_prompt(analysis):
+    """
+    Use Gemini to generate an enhanced prompt based on the analysis
+    """
+    try:
+        prompt_engineering = """
+        以下の画像分析結果を元に、Stability AIのSDXL用の最適な生成プロンプトを作成してください。
+
+        必要な要素：
+        1. メインプロンプト
+        - 正確なポーズの記述
+        - スタイル要素の詳細
+        - 画質向上のための技術的な指示
+        - 重要な視覚効果の指定
+
+        2. ネガティブプロンプト
+        - 避けるべき要素
+        - 品質低下を防ぐための指示
+
+        3. 生成パラメータ
+        - CFG Scale: 7-8の範囲
+        - Steps: 20-30の範囲
+        - Sampler: DPM++
+        - Size: 512x768
+
+        出力形式：
+        1. メインプロンプト：高品質な画像生成のための詳細な指示
+        2. ネガティブプロンプト：避けるべき要素のリスト
+        3. パラメータ：最適な生成設定
+
+        分析結果：
+        {analysis}
+        """
+
+        response = model.generate_content(prompt_engineering)
+        return response.text
+
+    except Exception as e:
+        logger.error(f"Error generating enhanced prompt: {str(e)}")
+        return None
 
 def generate_image_with_style(pose_image, style_image):
     """
     Generate a new image that combines the pose from pose_image with the style from style_image
-    using Stability AI's API
+    using multi-stage LLM processing and Stability AI
     """
     try:
-        # Save pose image to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as pose_tmp:
-            pose_image.save(pose_tmp.name, format='PNG')
+        # Get detailed analysis from Gemini
+        analysis = analyze_images_with_llm(pose_image, style_image)
+        if not analysis:
+            raise Exception("Failed to analyze images")
 
-        # Save style image to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as style_tmp:
-            style_image.save(style_tmp.name, format='PNG')
+        # Generate enhanced prompt
+        prompt_data = generate_enhanced_prompt(analysis)
+        if not prompt_data:
+            raise Exception("Failed to generate enhanced prompt")
 
-        # API endpoint for image generation
+        # Parse prompt data
+        prompt_lines = prompt_data.split('\n')
+        main_prompt = next((line for line in prompt_lines if line.startswith("メインプロンプト：")), "").replace("メインプロンプト：", "")
+        negative_prompt = next((line for line in prompt_lines if line.startswith("ネガティブプロンプト：")), "").replace("ネガティブプロンプト：", "")
+
+        # API endpoint for ultra generation
         host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
 
         # Prepare headers
@@ -39,37 +145,18 @@ def generate_image_with_style(pose_image, style_image):
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
-        # Read style image for reference
-        with open(style_tmp.name, 'rb') as style_file:
-            style_data = style_file.read()
-            style_base64 = base64.b64encode(style_data).decode('utf-8')
-
-        # Enhanced generation prompt with detailed style parameters
-        prompt = """masterpiece, best quality, movie still, 1girl,
-        maintain exact pose from reference image,
-        (high quality, sharp focus:1.2),
-        precise pose matching,
-        professional lighting,
-        detailed features,
-        soft lighting, volumetric lighting,
-        artistic composition,
-        professional color grading"""
-
-        # Negative prompt
-        negative_prompt = "NSFW, (worst quality, low quality:1.3), blurry, distorted"
-
         # Send request with enhanced parameters
         response = requests.post(
             host,
             headers=headers,
             files={"none": ""},
             data={
-                "prompt": prompt,
+                "prompt": main_prompt,
                 "negative_prompt": negative_prompt,
                 "output_format": "png",
                 "cfg_scale": 7,
                 "steps": 20,
-                "sampler": "DPM++",  # Using DPM++ sampler
+                "sampler": "DPM++",
                 "width": 512,
                 "height": 768,
             }
@@ -88,16 +175,6 @@ def generate_image_with_style(pose_image, style_image):
     except Exception as e:
         logger.error(f"Error in generate_image_with_style: {str(e)}")
         raise Exception(f"Failed to generate styled image: {str(e)}")
-
-    finally:
-        # Cleanup temporary files
-        try:
-            if 'pose_tmp' in locals():
-                os.unlink(pose_tmp.name)
-            if 'style_tmp' in locals():
-                os.unlink(style_tmp.name)
-        except Exception as cleanup_error:
-            logger.warning(f"Failed to cleanup temporary files: {cleanup_error}")
 
 
 def generate_controlnet_openpose(pose_image, style_prompt):
