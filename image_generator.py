@@ -5,6 +5,7 @@ import tempfile
 from PIL import Image
 import requests
 import io
+from fal import client as fal
 
 # Initialize detailed logging
 logging.basicConfig(
@@ -15,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 # Flux API configuration
 FLUX_API_KEY = "5db59d74-127a-4240-a028-2662d88522a4:f7e522e4afbf3486f03f771446bbfe4b"
-FLUX_API_URL = "https://fal.ai/public/flux-pro/v1.1-ultra/completion"
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -23,6 +23,11 @@ def generate_image(pose_image, style_prompt, system_prompt):
     """
     temp_files = []
     try:
+        # Configure fal client
+        fal.config({
+            "credentials": FLUX_API_KEY
+        })
+
         # Save pose image to temporary file
         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
             temp_files.append(tmp_file.name)
@@ -33,64 +38,42 @@ def generate_image(pose_image, style_prompt, system_prompt):
             with open(tmp_file.name, "rb") as image_file:
                 encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
 
-        # Create detailed prompt for Flux
-        prompt = f"""
-        {system_prompt}
-
-        Style Specifications:
-        {style_prompt}
-
-        Follow these instructions precisely to create the image based on the reference pose.
-        """
-
         logger.debug("Sending request to Flux Pro API")
 
-        # Prepare the request payload
-        payload = {
-            "prompt": prompt,
-            "negative_prompt": "multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers",
-            "image": {
-                "data": encoded_image,
-                "mime_type": "image/png"
+        # Generate image using Flux Pro API
+        result = fal.subscribe('fal-ai/flux-pro/v1.1-ultra', {
+            'input': {
+                'prompt': style_prompt,
+                'negative_prompt': 'multiple people, bad anatomy, extra limbs, deformed hands, deformed fingers',
+                'num_inference_steps': 30,
+                'guidance_scale': 7.5,
+                'controlnet_conditioning_scale': 1.0,
+                'image_size': '1024x1024',
+                'enable_safety_checker': False,
+                'num_images': 1,
+                'image': f"data:image/png;base64,{encoded_image}"
             },
-            "num_inference_steps": 30,
-            "guidance_scale": 7.5,
-            "controlnet_conditioning_scale": 1.0,
-            "width": 1024,
-            "height": 1024,
-            "seed": -1,  # Random seed
-            "scheduler": "euler_a"
-        }
+            'logs': True,
+            'onQueueUpdate': lambda update: logger.debug(f"Queue update: {update}")
+        })
 
-        # Make the API request
-        response = requests.post(
-            FLUX_API_URL,
-            headers={
-                "Authorization": f"Bearer {FLUX_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=60  # Add timeout to prevent hanging
-        )
+        if result and 'images' in result.data:
+            # Get the first generated image URL
+            image_url = result.data['images'][0]['url']
+            logger.debug(f"Received image URL: {image_url}")
 
-        if response.status_code == 200:
-            response_data = response.json()
-            if 'image' in response_data:
-                # Save and verify the image
-                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as out_file:
-                    temp_files.append(out_file.name)
-                    image_data = base64.b64decode(response_data['image'])
-                    out_file.write(image_data)
-                    logger.debug(f"Saved decoded image to: {out_file.name}")
-
-                    # Verify the image can be opened
-                    img = Image.open(out_file.name)
-                    logger.debug(f"Successfully opened generated image: format={img.format}, size={img.size}")
-                    return img
+            # Download the image
+            image_response = requests.get(image_url)
+            if image_response.status_code == 200:
+                image_data = image_response.content
+                # Create PIL Image from the downloaded data
+                img = Image.open(io.BytesIO(image_data))
+                logger.debug(f"Successfully downloaded and opened generated image: format={img.format}, size={img.size}")
+                return img
             else:
-                raise ValueError("No image data received from Flux Pro")
+                raise ValueError(f"Failed to download generated image: {image_response.status_code}")
         else:
-            raise ValueError(f"API request failed with status code {response.status_code}: {response.text}")
+            raise ValueError("No image data received from Flux Pro")
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
