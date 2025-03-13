@@ -75,48 +75,57 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
         data = {
             "contents": [{
                 "parts":[{
-                    "text": """Analyze these two images for an AI image generation task:
+                    "text": """Please analyze these two images:
 
-First Image (POSE REFERENCE ONLY):
-- Focus exclusively on pose and body position
-- Describe body angles and gesture details
-- DO NOT include any style, clothing, or artistic elements from this image
+FIRST IMAGE - POSE ONLY:
+Focus exclusively on body positioning and pose, ignore style and clothing.
+Describe:
+- Exact body position and orientation
+- Specific pose details and gestures
+- Key pose points and angles
 
-Second Image (STYLE AND CLOTHING REFERENCE):
-- Analyze complete artistic style (anime, realistic, etc)
-- Detailed clothing description:
-  * All garment types and pieces
-  * Design details and patterns
-  * Materials and textures
-  * Colors and color schemes
-  * Accessories and decorative elements
-- Visual style elements:
-  * Art technique and rendering style
-  * Shading and lighting approach
-  * Color treatment and mood
-  * Background style
+SECOND IMAGE - STYLE AND CLOTHING:
+Analyze complete visual style and clothing details.
+Describe:
+1. Art Style:
+   - Overall artistic style (anime, realistic, etc.)
+   - Art technique and rendering approach
+   - Visual effects and treatment
 
-Format response EXACTLY like this:
+2. Clothing Details:
+   - All garment pieces and types
+   - Colors and patterns
+   - Materials and textures
+   - Accessories and decorations
+
+3. Visual Elements:
+   - Lighting and shading
+   - Color scheme and mood
+   - Background treatment
+
+Format response EXACTLY as follows:
 {
-  "pose": {
-    "body_position": "precise pose description",
-    "gesture": "detailed body language",
-    "angles": ["key body angles and positions"]
+  "pose_reference": {
+    "body_position": "detailed position description",
+    "gestures": ["specific pose elements"],
+    "key_points": ["important angles and positions"]
   },
-  "reference_style": {
-    "art_style": "specific art style (anime/realistic/etc)",
+  "style_reference": {
+    "art_style": {
+      "type": "main style (anime/realistic/etc)",
+      "technique": "artistic approach",
+      "effects": ["visual effects"]
+    },
     "clothing": {
-      "garments": ["detailed clothing items"],
-      "design": ["specific design elements"],
-      "materials": ["fabric types and textures"],
-      "colors": ["exact color descriptions"],
-      "accessories": ["all accessories"]
+      "garments": ["all clothing items"],
+      "colors": ["color details"],
+      "materials": ["fabric and texture"],
+      "accessories": ["decorative elements"]
     },
     "visuals": {
-      "technique": "art technique description",
-      "lighting": "lighting style",
-      "color_treatment": "color grading approach",
-      "effects": ["special visual effects"]
+      "lighting": "lighting description",
+      "color_scheme": "overall color treatment",
+      "background": "background style"
     }
   }
 }"""
@@ -146,10 +155,21 @@ Format response EXACTLY like this:
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text_response)
+
+        # Extract JSON content
+        start = text_response.find('{')
+        end = text_response.rfind('}') + 1
+
+        if start == -1 or end == 0:
+            logger.error(f"No JSON found in response: {text_response}")
+            raise Exception("Failed to extract JSON from response")
+
+        json_str = text_response[start:end]
+        return json.loads(json_str)
 
     except Exception as e:
-        logger.error(f"Error in Gemini analysis: {str(e)}")
+        logger.error(f"Error in analyze_images_with_llm: {str(e)}")
+        logger.error(f"Full error context: {str(e.__class__.__name__)}")
         return None
 
 def generate_enhanced_prompt(analysis):
