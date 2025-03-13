@@ -121,6 +121,20 @@ div.css-1629p8f {
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* 入力部分のコンパクト化 */
+h4 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 1em !important;
+    line-height: 1 !important;
+}
+
+/* 左側のプレビュー画像サイズ調整 */
+.stImage > img {
+    max-width: 80px !important;
+    max-height: 80px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -139,7 +153,7 @@ with left_col:
     )
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image, use_container_width=False, width=120)
+        st.image(pose_image, use_container_width=False, width=80)
 
     # Style Image Upload Section
     st.markdown("#### スタイル参照画像")
@@ -150,7 +164,7 @@ with left_col:
     )
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image, use_container_width=False, width=120)
+        st.image(style_image, use_container_width=False, width=80)
 
 with right_col:
     st.markdown("## Generated Result")
