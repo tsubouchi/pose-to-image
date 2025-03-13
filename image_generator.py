@@ -25,13 +25,14 @@ def generate_image(pose_image, style_prompt):
 
         # Create system prompt
         system_prompt = (
-            "You are an expert at interpreting stick figure poses and creating detailed character images. "
-            "The input image shows a pose extracted from a real photo, represented as colored lines. "
-            "Your task is to create a new character image that:"
-            "1. Maintains the exact same pose and proportions as the stick figure"
-            "2. Adds detailed character features according to the specified style"
-            "3. Creates a suitable background that enhances the character"
-            "4. Ensures high quality and consistency in the output"
+            "あなたは棒人間のポーズから日本のアニメスタイルのキャラクターを生成する専門家です。"
+            "入力された画像は実写から抽出されたポーズで、カラーラインで表現されています。"
+            "以下の要件に従って新しい画像を生成してください："
+            "1. 棒人間で示された正確なポーズと比率を維持する"
+            "2. 指定されたスタイルに合わせて詳細なキャラクター特徴を追加する"
+            "3. キャラクターを引き立てる適切な背景を作成する"
+            "4. 高品質で一貫性のある出力を確保する"
+            "\n生成された画像はimagen3の品質で出力してください。"
         )
 
         # Combine prompts
