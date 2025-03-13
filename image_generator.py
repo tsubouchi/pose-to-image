@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Stability API configuration
-STABILITY_KEY = "sk-Rm5frm48K7sArubPQgJ9r2w8Q75XH5y0UR215NC4Fjndu7gz"
+STABILITY_KEY = os.getenv("STABILITY_KEY")
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -92,3 +92,121 @@ def generate_image(pose_image, style_prompt, system_prompt):
                     logger.debug(f"Cleaned up temporary file: {temp_file}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temporary file {temp_file}: {cleanup_error}")
+
+def generate_video(pose_sequence, style_prompt, fps=30, duration=5):
+    """
+    Generate a video using Stability AI based on a sequence of pose images
+    """
+    try:
+        logger.debug("Starting video generation process")
+
+        # Calculate number of frames needed
+        num_frames = fps * duration
+
+        # API endpoint for video generation
+        host = "https://api.stability.ai/v2beta/stable-video/generate"
+
+        headers = {
+            "Accept": "video/*",
+            "Authorization": f"Bearer {STABILITY_KEY}"
+        }
+
+        # Prepare request parameters
+        params = {
+            "prompt": style_prompt,
+            "fps": fps,
+            "seconds": duration,
+            "control_strength": 0.7,
+            "motion_bucket_id": 127,  # High motion value for dynamic movement
+            "seed": 0
+        }
+
+        # Send video generation request
+        response = requests.post(
+            host,
+            headers=headers,
+            json=params
+        )
+
+        if not response.ok:
+            logger.error(f"Video API Response: {response.text}")
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+        # Save video content
+        video_content = response.content
+
+        # Create temporary file for video
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_file:
+            tmp_file.write(video_content)
+            logger.debug(f"Generated video saved to: {tmp_file.name}")
+            return tmp_file.name
+
+    except Exception as e:
+        logger.error(f"Error in generate_video: {str(e)}")
+        raise Exception(f"Failed to generate video: {str(e)}")
+
+def generate_controlnet_openpose(pose_image, style_prompt):
+    """
+    Generate an image using ControlNet OpenPose
+    """
+    try:
+        # Save pose image to temporary file
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+            pose_image.save(tmp_file.name, format='PNG')
+
+        # API endpoint for ControlNet
+        host = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/controlnet"
+
+        headers = {
+            "Accept": "image/*",
+            "Authorization": f"Bearer {STABILITY_KEY}"
+        }
+
+        # Prepare the files and parameters
+        files = {
+            "init_image": open(tmp_file.name, "rb")
+        }
+
+        params = {
+            "init_image_mode": "IMAGE_STRENGTH",
+            "image_strength": 0.35,
+            "steps": 50,
+            "seed": 0,
+            "cfg_scale": 7,
+            "controlnet_type": "openpose",  # Specify OpenPose as the ControlNet model
+            "controlnet_strength": 0.7,
+            "samples": 1,
+            "style_preset": "anime",
+            "text_prompts[0][text]": style_prompt,
+            "text_prompts[0][weight]": 1
+        }
+
+        # Send request
+        response = requests.post(
+            host,
+            headers=headers,
+            files=files,
+            data=params
+        )
+
+        if not response.ok:
+            logger.error(f"ControlNet API Response: {response.text}")
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+        # Process response
+        output_image = response.content
+        img = Image.open(io.BytesIO(output_image))
+        logger.debug(f"Successfully generated image using ControlNet OpenPose")
+
+        return img
+
+    except Exception as e:
+        logger.error(f"Error in generate_controlnet_openpose: {str(e)}")
+        raise Exception(f"Failed to generate image with ControlNet: {str(e)}")
+
+    finally:
+        # Cleanup temporary files
+        try:
+            os.unlink(tmp_file.name)
+        except:
+            pass

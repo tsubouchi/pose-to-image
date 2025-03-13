@@ -3,10 +3,10 @@ import mediapipe as mp
 from PIL import Image
 import io
 from pose_extractor import extract_pose
-from image_generator import generate_image
+from image_generator import generate_image, generate_video, generate_controlnet_openpose
 
 st.set_page_config(
-    page_title="Pose to Image Generator",
+    page_title="Pose to Image/Video Generator",
     layout="wide"
 )
 
@@ -173,7 +173,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Pose to Image Generator")
+st.title("AI Pose to Image/Video Generator")
 
 # Initialize session state
 if 'original_images' not in st.session_state:
@@ -184,6 +184,13 @@ if 'intermediate_images' not in st.session_state:
     st.session_state.intermediate_images = []
 if 'generated_images' not in st.session_state:
     st.session_state.generated_images = []
+
+# Add mode selection
+generation_mode = st.radio(
+    "Select Generation Mode",
+    ["Single Image", "Video Sequence"],
+    help="Choose whether to generate a single image or a video sequence"
+)
 
 # Style selection options
 styles = {
@@ -201,15 +208,21 @@ worst quality, low quality, blurry, text"""
     }
 }
 
-# File uploader - ドラッグ&ドロップ機能の修正
+# File uploader
 uploaded_files = st.file_uploader(
     "Drop your images here",
     type=['png', 'jpg', 'jpeg'],
     accept_multiple_files=True,
-    key="file_uploader"  # Unique keyを追加
+    key="file_uploader"
 )
 
-# Style selection - fixed to school uniform
+# Video generation parameters (if video mode selected)
+if generation_mode == "Video Sequence":
+    st.sidebar.subheader("Video Settings")
+    fps = st.sidebar.slider("Frames per second", 15, 60, 30)
+    duration = st.sidebar.slider("Duration (seconds)", 1, 10, 5)
+
+# Style selection - fixed to school uniform for now
 selected_style = "Anime Style School Uniform"
 
 # Process uploaded images
@@ -239,7 +252,7 @@ if uploaded_files:
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Create columns with proper spacing
+                # Create columns for display
                 cols = st.columns([1, 1, 1, 1, 1])
 
                 # Step 1: Original Image
@@ -262,7 +275,7 @@ if uploaded_files:
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        pose_image, pose_descriptions, results = extract_pose(image) #modified to return results
+                        pose_image, pose_descriptions, results = extract_pose(image)
                         if pose_image is not None:
                             st.image(pose_image, use_container_width=True)
                             st.markdown('<div class="tag">Pose Detected</div>', unsafe_allow_html=True)
@@ -270,7 +283,6 @@ if uploaded_files:
                             # Add pose refinement suggestions
                             if results and results.pose_landmarks:
                                 suggestions = get_pose_refinement_suggestions(results.pose_landmarks)
-
                                 st.markdown("""
                                 <div class="step-header">
                                     <h4>AI Pose Suggestions</h4>
@@ -286,12 +298,12 @@ if uploaded_files:
                                         """, unsafe_allow_html=True)
                         else:
                             st.error("Error in pose extraction, using default pose")
-                            pose_image = Image.new('RGB', (100,100)) #placeholder image
+                            pose_image = Image.new('RGB', (100,100))
                             pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
 
                     except Exception as e:
                         st.error("Error in pose extraction, using default pose")
-                        pose_image = Image.new('RGB', (100,100)) #placeholder image
+                        pose_image = Image.new('RGB', (100,100))
                         pose_descriptions = {'right_shoulder_desc':'default','right_elbow_desc':'default','left_shoulder_desc':'default','left_elbow_desc':'default','spine_desc':'default','right_hip_desc':'default','right_knee_desc':'default','left_hip_desc':'default','left_knee_desc':'default'}
                         continue
 
@@ -304,201 +316,48 @@ if uploaded_files:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Format the prompt with pose descriptions
-                    generation_prompt = f"""masterpiece, best quality, highly detailed,
-
-Body Parts Position Description:
-1. Upper Body:
-- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
-- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
-- {pose_descriptions['spine_desc']}
-
-2. Lower Body:
-- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
-- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
-
-Style Elements:
-- high quality anime art style
-- school uniform with pleated skirt and sailor collar
-- natural indoor lighting with soft shadows
-- classroom environment background
-- clear facial features and detailed eyes
-- clean lineart and professional shading
-"""
+                    generation_prompt = styles[selected_style]["base_prompt"]
                     st.text_area("Prompt", value=generation_prompt, height=300, disabled=True)
                     st.markdown('<div class="tag">Style Applied</div>', unsafe_allow_html=True)
 
-                # Step 4: Pose to Human
+                # Step 4: OpenPose Generation
                 with cols[3]:
                     st.markdown("""
                     <div class="step-header">
                         <div class="step-icon">4</div>
-                        <h3>Pose to Human</h3>
+                        <h3>OpenPose Generation</h3>
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # First pass: Convert stick figure to realistic human form
-                        human_form_prompt = f"""Important: Convert stick figure to precise human form.
-
-CRITICAL - Exact Pose Requirements:
-{', '.join([f'{k}: {v}' for k,v in pose_descriptions.items()])}
-
-Instructions for conversion:
-1. Maintain ALL joint angles and positions exactly as shown
-2. Keep body proportions anatomically correct
-3. Preserve the pose's distinctive characteristics
-4. Focus on structural accuracy over style
-
-Technical Requirements:
-- Use neutral 3D rendering
-- Simple gray background
-- Clear lighting without shadows
-- Focus on skeletal and muscular structure
-- Ensure all limbs are correctly positioned
-- Maintain center of gravity and balance points
-
-Priority: Accuracy of pose over visual aesthetics"""
-
-                        human_pose = generate_image(
+                        openpose_image = generate_controlnet_openpose(
                             pose_image,
-                            human_form_prompt,
-                            "Anatomically correct human figure, exact pose matching, technical reference quality"
+                            generation_prompt
                         )
-                        if human_pose is not None:
-                            st.image(human_pose, use_container_width=True)
-                            st.markdown('<div class="tag">Human Form Generated</div>', unsafe_allow_html=True)
+                        if openpose_image is not None:
+                            st.image(openpose_image, use_container_width=True)
+                            st.markdown('<div class="tag">OpenPose Generated</div>', unsafe_allow_html=True)
                         else:
-                            st.error("Failed to convert pose to human form")
+                            st.error("Failed to generate OpenPose image")
                             continue
                     except Exception as e:
-                        st.error(f"Error in pose to human conversion: {str(e)}")
+                        st.error(f"Error in OpenPose generation: {str(e)}")
                         continue
 
-                # Step 5: Generate realistic photo first, then convert to anime
+                # Step 5: Final Generation
                 with cols[4]:
                     st.markdown("""
                     <div class="step-header">
                         <div class="step-icon">5</div>
-                        <h3>Final Image</h3>
+                        <h3>Final Result</h3>
                     </div>
                     """, unsafe_allow_html=True)
                     try:
-                        # First generate realistic photo
-                        style_prompt = f"""System Instructions: CRITICAL - Generate high quality image from bone structure.
-
-PHASE 1 - BONE STRUCTURE INTERPRETATION:
-1. Analyze Input Structure:
-- Each green line represents a specific bone/joint connection
-- Structure defines the exact 3D pose positioning
-- All joint angles must be perfectly matched
-- Every bone length determines limb proportions
-
-2. Precise Joint Positioning:
-Upper Body:
-- Right Arm: {pose_descriptions['right_shoulder_desc']}, elbow {pose_descriptions['right_elbow_desc']}
-- Left Arm: {pose_descriptions['left_shoulder_desc']}, elbow {pose_descriptions['left_elbow_desc']}
-- {pose_descriptions['spine_desc']}
-
-Lower Body:
-- Right Leg: hip {pose_descriptions['right_hip_desc']}, knee {pose_descriptions['right_knee_desc']}
-- Left Leg: hip {pose_descriptions['left_hip_desc']}, knee {pose_descriptions['left_knee_desc']}
-
-3. Character Creation:
-Body Features:
-- Young female high school student
-- Natural, balanced proportions
-- Graceful and dynamic pose
-- Smooth, natural muscle definition
-- Realistic body weight distribution
-
-Clothing:
-- High-quality sailor school uniform
-- Crisp, well-fitted design
-- Pleated skirt with natural flow
-- Proper fabric wrinkles and folds
-- Clean, detailed uniform elements
-
-Environmental Details:
-- Modern classroom setting
-- Natural daylight from windows
-- Soft shadows and highlights
-- Clean, uncluttered background
-- Professional depth of field
-
-4. Technical Quality:
-- Ultra-high resolution details
-- Professional photography quality
-- Perfect anatomical accuracy
-- Cinematic lighting setup
-- Sharp focus on subject
-- Natural color grading
-
-CRITICAL REQUIREMENTS:
-- Perfect bone structure matching
-- Photorealistic rendering quality
-- Natural pose execution
-- Comprehensive lighting setup
-- Studio-quality final output
-
-masterpiece, best quality, highly detailed, professional photograph"""
-
-                        photo_image = generate_image(
-                            pose_image,
-                            style_prompt,
-                            "Create ultra-high quality photo matching bone structure exactly"
-                        )
-
-                        if photo_image is not None:
-                            # Convert photo to anime style
-                            anime_prompt = """Transform into masterpiece anime artwork while preserving exact pose:
-
-1. Character Style:
-- Beautiful anime art style
-- Clean, professional linework
-- Detailed facial features
-- Large, expressive eyes
-- Flowing, dynamic hair
-- Soft, appealing color palette
-
-2. Uniform Details:
-- Crisp sailor school uniform
-- Detailed collar and cuffs
-- Perfectly pleated skirt
-- Subtle fabric textures
-- School emblem and accessories
-- Natural clothing physics
-
-3. Environmental Elements:
-- Detailed classroom background
-- Soft natural lighting
-- Window light effects
-- Subtle ambient shadows
-- Clean depth of field
-- Enhanced atmosphere
-
-4. Technical Excellence:
-- High-end anime production quality
-- Professional cel shading
-- Perfect line consistency
-- Rich color composition
-- Dynamic lighting effects
-- Studio-quality finish
-
-5. Artistic Focus:
-- Maintain exact pose structure
-- Enhance visual appeal
-- Create emotional impact
-- Perfect balance of elements
-- Professional composition
-
-masterpiece, best quality, professional anime style, highly detailed"""
-
+                        if generation_mode == "Single Image":
                             final_image = generate_image(
-                                photo_image,
-                                anime_prompt,
-                                "Convert to highest quality anime while preserving exact pose"
+                                openpose_image,
+                                generation_prompt,
+                                "Convert to high quality anime while preserving pose"
                             )
-
                             if final_image is not None:
                                 st.image(final_image, use_container_width=True)
                                 st.markdown('<div class="tag">Generation Complete</div>', unsafe_allow_html=True)
@@ -507,18 +366,33 @@ masterpiece, best quality, professional anime style, highly detailed"""
                                 buf = io.BytesIO()
                                 final_image.save(buf, format='PNG')
                                 st.download_button(
-                                    label="Download",
+                                    label="Download Image",
                                     data=buf.getvalue(),
                                     file_name=f"generated_image_{idx+1}.png",
                                     mime="image/png",
                                     use_container_width=True
                                 )
-                            else:
-                                st.error("Failed to convert to anime style")
-                        else:
-                            st.error("Failed to generate realistic photo")
+                        else:  # Video mode
+                            video_path = generate_video(
+                                [openpose_image],
+                                generation_prompt,
+                                fps=fps,
+                                duration=duration
+                            )
+                            if video_path:
+                                with open(video_path, 'rb') as video_file:
+                                    video_bytes = video_file.read()
+                                st.video(video_bytes)
+                                st.markdown('<div class="tag">Video Generated</div>', unsafe_allow_html=True)
+                                st.download_button(
+                                    label="Download Video",
+                                    data=video_bytes,
+                                    file_name=f"generated_video_{idx+1}.mp4",
+                                    mime="video/mp4",
+                                    use_container_width=True
+                                )
                     except Exception as gen_error:
-                        st.error(f"Error generating final image: {str(gen_error)}")
+                        st.error(f"Error in final generation: {str(gen_error)}")
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -533,22 +407,19 @@ masterpiece, best quality, professional anime style, highly detailed"""
 st.markdown("""
 ---
 ### How to Use:
-1. Upload one or more images containing people
-2. The generation style is fixed to "Anime Style School Uniform"
-3. Each image will be processed through five steps:
+1. Select generation mode (Single Image or Video)
+2. Upload one or more images containing people
+3. For video generation, adjust FPS and duration in the sidebar
+4. Each image will be processed through five steps:
    - Step 1: Original Image Display
    - Step 2: Pose Extraction
    - Step 3: Prompt Generation
-   - Step 4: Pose to Human Conversion
-   - Step 5: Final Style Generation
-4. Download generated images using the download buttons
+   - Step 4: OpenPose Generation
+   - Step 5: Final Result (Image or Video)
+5. Download your generated content using the download buttons
 """)
 
 def get_pose_refinement_suggestions(pose_landmarks):
-    # Placeholder for actual pose refinement logic.  Replace with your implementation
-    # This function should analyze pose_landmarks and return a dictionary of suggestions
-    # Example:  {"right_shoulder": "Try to straighten your right shoulder", "left_elbow": "Bend your left elbow slightly more"}
-    #  return {"error": "Pose refinement not yet implemented"} #For testing
     suggestions = {}
     for landmark in pose_landmarks:
         if landmark.x < 0.3:
