@@ -76,6 +76,14 @@ div[data-testid="stFileUploader"] {
 div[data-testid="stFileUploader"] > div > div {
     padding: 0.25rem;
 }
+
+/* 画像サイズを1/3に縮小 */
+div[data-testid="stImage"] img {
+    max-width: 33% !important;
+    max-height: auto !important;
+    display: block;
+    margin: 0 auto;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -95,7 +103,7 @@ with left_col:
     )
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image, use_container_width=True)
+        st.image(pose_image, use_container_width=False)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Style Image Upload Section
@@ -108,7 +116,7 @@ with left_col:
     )
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image, use_container_width=True)
+        st.image(style_image, use_container_width=False)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with right_col:
