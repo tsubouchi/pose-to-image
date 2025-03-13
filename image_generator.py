@@ -6,7 +6,6 @@ from PIL import Image
 import requests
 import io
 import json
-import google.generativeai as genai
 
 # Initialize logging
 logging.basicConfig(
@@ -61,34 +60,46 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
             "contents": [{
                 "parts":[{
                     "text": """
-                    2枚の画像を詳細に分析し、以下のJSONフォーマットで出力してください：
+                    Please analyze these two images and provide detailed information for image generation:
 
+                    1. POSE IMAGE ANALYSIS:
                     {
                       "pose_details": {
-                        "body_position": "全身の姿勢と向き",
-                        "limbs": "手足の位置と角度",
-                        "head": "頭部の向きと表情",
-                        "special_features": ["特徴的なポーズの要素"]
-                      },
-                      "style_elements": {
-                        "art_style": "アートスタイルの具体的な特徴（アニメ、写実的等）",
-                        "color_scheme": ["主要な色とトーン"],
-                        "line_work": "線の特徴（太さ、質感等）",
-                        "shading": "影と光の表現方法",
-                        "materials": "使用されている素材や質感の表現"
-                      },
-                      "composition": {
-                        "framing": "構図の特徴",
-                        "perspective": "視点と奥行きの表現",
-                        "background": "背景の処理方法"
-                      },
-                      "key_elements": ["最も重要な視覚的特徴のリスト"],
-                      "technical_aspects": {
-                        "rendering": "レンダリング手法",
-                        "lighting": "照明効果",
-                        "details": "細部の表現方法"
+                        "body_position": "describe full body position and orientation",
+                        "gesture": "specific pose gestures and body language",
+                        "expression": "facial expression and emotional conveyance",
+                        "key_points": ["list of distinctive pose elements"]
                       }
                     }
+
+                    2. STYLE IMAGE ANALYSIS:
+                    {
+                      "visual_style": {
+                        "artistic_style": "detailed style description (photorealistic, cinematic, anime, etc.)",
+                        "technical_aspects": {
+                          "camera_settings": "angle, focal length, depth of field",
+                          "lighting": "lighting setup, time of day, mood",
+                          "composition": "framing, perspective, spatial arrangement"
+                        },
+                        "color_palette": {
+                          "primary_colors": ["list main colors"],
+                          "color_harmony": "color relationship description",
+                          "tone": "overall color grading and mood"
+                        },
+                        "textures": {
+                          "materials": "texture and material qualities",
+                          "surface_details": "specific texture characteristics"
+                        },
+                        "artistic_elements": {
+                          "line_work": "line quality and characteristics",
+                          "shading": "shading and lighting technique",
+                          "special_effects": "any unique visual effects"
+                        }
+                      }
+                    }
+
+                    Analyze both images thoroughly and provide specific, technical details that can be used
+                    in image generation prompts. Use professional photography and artistic terminology.
                     """
                 }, {
                     "inlineData": {
@@ -116,7 +127,7 @@ def analyze_images_with_llm(pose_image: Image.Image, style_image: Image.Image):
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-        return parse_gemini_response(text_response)
+        return json.loads(text_response)
 
     except Exception as e:
         logger.error(f"Error in Gemini analysis: {str(e)}")
@@ -138,30 +149,35 @@ def generate_enhanced_prompt(analysis):
             "contents": [{
                 "parts":[{
                     "text": f"""
-                    以下の画像分析結果を元に、Stability AI用の詳細な生成プロンプトを作成してください。
-                    画風とスタイルを正確に反映することが最重要です。
+                    Based on the image analysis, create a detailed generation prompt with the following structure:
 
-                    分析結果：
-                    {json.dumps(analysis, ensure_ascii=False, indent=2)}
+                    1. Create a professional prompt that includes:
+                    - Visual style (photorealistic, cinematic, anime, etc.)
+                    - Detailed style description
+                    - Lighting conditions, time of day, atmosphere
+                    - Color palette and tones
+                    - Camera angle, focal length, depth of field
+                    - Texture and material qualities
 
-                    以下のフォーマットでJSON出力してください：
+                    2. The prompt should:
+                    - Start with "masterpiece, best quality"
+                    - Use professional photography and art terminology
+                    - Be directly usable in image generation AI
+                    - Maintain exact pose from the reference
+                    - Include all style elements from the analysis
+
+                    3. Create in this JSON format:
                     {{
-                      "main_prompt": "生成プロンプト (以下の要素を含める)：
-                        - masterpiece, best quality で始める
-                        - 正確なポーズの記述
-                        - アートスタイルの詳細な指定
-                        - 色使いとトーンの指定
-                        - 線の質感と特徴
-                        - 影と光の表現方法
-                        - 背景のスタイル",
-                      "negative_prompt": "避けるべき要素（低品質、ブレ、不適切なスタイル等）",
+                      "main_prompt": "complete prompt with all style elements",
+                      "negative_prompt": "detailed negative prompt to maintain style",
                       "parameters": {{
                         "cfg_scale": 7,
-                        "steps": 20,
-                        "width": 512,
-                        "height": 768
+                        "steps": 20
                       }}
                     }}
+
+                    Analysis result:
+                    {json.dumps(analysis, ensure_ascii=False, indent=2)}
                     """
                 }]
             }]
@@ -179,7 +195,7 @@ def generate_enhanced_prompt(analysis):
             raise Exception("No candidates in Gemini response")
 
         text_response = result["candidates"][0]["content"]["parts"][0]["text"]
-        return parse_gemini_response(text_response)
+        return json.loads(text_response)
 
     except Exception as e:
         logger.error(f"Error generating enhanced prompt: {str(e)}")
@@ -203,19 +219,6 @@ def generate_image_with_style(pose_image, style_image):
         prompt_data = generate_enhanced_prompt(analysis)
         if not prompt_data:
             raise Exception("Failed to generate enhanced prompt")
-
-        # Parse prompt data
-        if isinstance(prompt_data, str):
-            try:
-                prompt_data = json.loads(prompt_data)
-            except:
-                # Fallback if JSON parsing fails
-                logger.warning("Failed to parse JSON, using text extraction")
-                prompt_data = {
-                    "main_prompt": "masterpiece, best quality, maintain exact pose from reference image",
-                    "negative_prompt": "NSFW, low quality, blurry, distorted",
-                    "parameters": {"cfg_scale": 7, "steps": 20}
-                }
 
         # API endpoint for ultra generation
         host = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
