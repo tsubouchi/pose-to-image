@@ -47,8 +47,9 @@ st.markdown("""
     border-radius: 8px;
     padding: 10px;
     margin-top: 10px;
-    min-height: 40vh;
+    height: 40vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 }
@@ -69,8 +70,8 @@ div[data-testid="stImage"] img {
 
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
-    max-width: 80% !important;
-    max-height: 50vh !important;
+    max-width: 70% !important;
+    max-height: 35vh !important;
     margin: 0 auto;
 }
 
@@ -127,25 +128,31 @@ with right_col:
 
     if pose_file and style_file:
         try:
-            # Status Area
-            st.markdown('<div class="status-area">', unsafe_allow_html=True)
+            # Pose Analysis Section
+            with st.expander("🔍 ポーズ解析の詳細", expanded=True):
+                with st.status("ポーズを解析中...") as status:
+                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                    if pose_result is None:
+                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                        st.stop()
+                    status.update(label="✅ ポーズの解析が完了", state="complete")
 
-            # Pose Analysis Status
-            with st.status("🔍 ポーズを解析中...") as status:
-                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                if pose_result is None:
-                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                    st.stop()
-                status.update(label="✅ ポーズの解析が完了", state="complete")
+                    if pose_descriptions:
+                        st.markdown("**検出されたポーズの特徴:**")
+                        for key, value in pose_descriptions.items():
+                            if not key.endswith("_desc"):
+                                continue
+                            label = key.replace("_desc", "").replace("_", " ").title()
+                            st.markdown(f"- {label}: {value}")
 
-            # Image Generation Status
-            with st.status("🎨 画像を生成中...") as status:
-                result_image = generate_image_with_style(pose_image, style_image)
-                if result_image:
-                    status.update(label="✅ 画像の生成が完了", state="complete")
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Image Generation Section
+            with st.expander("🎨 画像生成の詳細", expanded=True):
+                with st.status("画像を生成中...") as status:
+                    result_image = generate_image_with_style(pose_image, style_image)
+                    if result_image:
+                        status.update(label="✅ 画像の生成が完了", state="complete")
 
-            # Preview Area
+            # Preview Area for the generated image
             st.markdown('<div class="preview-area">', unsafe_allow_html=True)
             if result_image:
                 st.image(result_image, use_container_width=False)
