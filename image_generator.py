@@ -23,10 +23,24 @@ def generate_image(pose_image, style_prompt):
             "data": image_data
         }
 
+        # Create system prompt
+        system_prompt = (
+            "You are an expert at interpreting stick figure poses and creating detailed character images. "
+            "The input image shows a pose extracted from a real photo, represented as colored lines. "
+            "Your task is to create a new character image that:"
+            "1. Maintains the exact same pose and proportions as the stick figure"
+            "2. Adds detailed character features according to the specified style"
+            "3. Creates a suitable background that enhances the character"
+            "4. Ensures high quality and consistency in the output"
+        )
+
+        # Combine prompts
+        full_prompt = f"{system_prompt}\n\n{style_prompt}"
+
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         response = model.generate_content([
-            style_prompt,
+            full_prompt,
             image_parts
         ])
 
@@ -35,7 +49,8 @@ def generate_image(pose_image, style_prompt):
             for part in response.parts:
                 if hasattr(part, 'inline_data'):
                     image_bytes = base64.b64decode(part.inline_data.data)
-                    return Image.open(BytesIO(image_bytes))
+                    generated_image = Image.open(BytesIO(image_bytes))
+                    return generated_image
 
         raise ValueError("No image was generated in the response")
 

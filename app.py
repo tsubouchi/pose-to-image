@@ -25,10 +25,41 @@ col1, col2, col3 = st.columns(3)
 
 # スタイル選択のオプション
 styles = {
-    "アニメ調": "Create an anime-style character image matching this pose. Use vibrant colors and dynamic composition.",
-    "水彩画風": "Create a watercolor-style illustration matching this pose. Use soft, flowing colors and subtle textures.",
-    "3Dレンダリング": "Create a 3D rendered character matching this pose. Add realistic lighting and textures.",
-    "ピクセルアート": "Create a pixel art character matching this pose. Use a retro gaming style with limited color palette.",
+    "アニメ調": """
+    Create an anime-style character image based on this pose skeleton.
+    - Use an anime art style with clean lines and vibrant colors
+    - Add appropriate anime-style clothing and hair
+    - Create a dynamic composition with attention to lighting and shadows
+    - Include a background that complements the character's pose
+    - Maintain the exact pose structure shown in the skeleton
+    """,
+
+    "水彩画風": """
+    Create a watercolor-style illustration based on this pose skeleton.
+    - Use soft, flowing watercolor techniques with visible brush strokes
+    - Add gentle color gradients and subtle bleeding effects
+    - Choose a soft, pastel-based color palette
+    - Create an atmospheric background with watercolor textures
+    - Maintain the exact pose structure shown in the skeleton
+    """,
+
+    "3Dレンダリング": """
+    Create a 3D rendered character based on this pose skeleton.
+    - Use realistic 3D modeling techniques with proper lighting and shadows
+    - Add detailed textures and materials to the character
+    - Include realistic clothing physics and material properties
+    - Create an environment with proper depth and perspective
+    - Maintain the exact pose structure shown in the skeleton
+    """,
+
+    "ピクセルアート": """
+    Create a pixel art character based on this pose skeleton.
+    - Use a limited color palette typical of retro games
+    - Create clear pixel-by-pixel details with no anti-aliasing
+    - Add appropriate pixelated clothing and accessories
+    - Include a background in matching pixel art style
+    - Maintain the exact pose structure shown in the skeleton
+    """
 }
 
 with col1:
