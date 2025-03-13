@@ -21,29 +21,19 @@ st.markdown("""
     color: #fff;
 }
 
-.input-section {
-    background-color: #0a0a0a;
-    border-radius: 8px;
-    padding: 5px;
-    margin-bottom: 8px;
-    border: 1px solid #333;
-}
-
 .result-section {
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 10px;
     height: 85vh;
-    display: flex;
-    flex-direction: column;
 }
 
 .preview-area {
     background-color: #0a0a0a;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 10px;
-    height: 70vh;
+    padding: 8px;
+    margin: 8px 0;
+    height: 75vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -67,7 +57,8 @@ div[data-testid="stImage"] img {
 /* 生成結果の画像サイズ調整 */
 .preview-area div[data-testid="stImage"] img {
     max-width: 100% !important;
-    max-height: 65vh !important;
+    max-height: 70vh !important;
+    object-fit: contain;
     margin: 0;
 }
 
@@ -75,6 +66,11 @@ div[data-testid="stImage"] img {
 div[data-testid="stStatus"] {
     padding: 0.25rem !important;
     margin: 0.25rem 0 !important;
+}
+
+/* ダウンロードボタンの調整 */
+.preview-area div[data-testid="stDownloadButton"] {
+    margin-top: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -113,6 +109,7 @@ with left_col:
 
 with right_col:
     st.markdown("## Generated Result")
+    st.markdown('<div class="result-section">', unsafe_allow_html=True)
 
     if pose_file and style_file:
         try:
@@ -162,6 +159,8 @@ with right_col:
             logger.error(f"Error processing images: {str(e)}")
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Instructions
 with st.expander("💡 使い方"):
