@@ -38,7 +38,9 @@ def generate_image(pose_image, style_prompt, system_prompt):
             "image_strength": 0.35,
             "steps": 30,
             "cfg_scale": 7.5,
-            "sampler": "K_EULER_ANCESTRAL"
+            "sampler": "K_EULER_ANCESTRAL",
+            "seed": 0,
+            "output_format": "png"
         }
 
         logger.debug("Sending request to Stability AI API")
@@ -46,14 +48,19 @@ def generate_image(pose_image, style_prompt, system_prompt):
         # Send generation request
         response = send_generation_request(STABILITY_API_HOST, params)
 
-        if response.status_code == 200:
-            # Process the response
-            image_data = response.content
-            img = Image.open(io.BytesIO(image_data))
-            logger.debug(f"Successfully received and opened generated image: format={img.format}, size={img.size}")
-            return img
-        else:
-            raise ValueError(f"API request failed with status code {response.status_code}: {response.text}")
+        # Decode response
+        output_image = response.content
+        finish_reason = response.headers.get("finish-reason")
+        seed = response.headers.get("seed")
+
+        # Check for NSFW classification
+        if finish_reason == 'CONTENT_FILTERED':
+            raise Warning("Generation failed NSFW classifier")
+
+        # Save and return result
+        img = Image.open(io.BytesIO(output_image))
+        logger.debug(f"Successfully received and opened generated image: format={img.format}, size={img.size}")
+        return img
 
     except Exception as e:
         logger.error(f"Error in generate_image: {str(e)}")
