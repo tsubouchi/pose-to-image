@@ -33,7 +33,8 @@ st.markdown("""
     background-color: #1a1a1a;
     border-radius: 8px;
     padding: 10px;
-    height: 90vh;
+    height: 70vh;
+    overflow-y: auto;
 }
 
 .upload-header {
@@ -54,9 +55,15 @@ div[data-testid="stFileUploader"] > div > div {
 /* 画像サイズの調整 */
 div[data-testid="stImage"] img {
     max-width: 25% !important;
-    max-height: 25vh !important;
+    max-height: 20vh !important;
     display: block;
     margin: 0 auto;
+}
+
+/* 生成結果の画像サイズ調整 */
+.result-container div[data-testid="stImage"] img {
+    max-width: 50% !important;
+    max-height: 40vh !important;
 }
 
 /* ヘッダーの調整 */
@@ -71,6 +78,22 @@ div.stMarkdown p {
     font-size: 0.9em;
     margin: 0;
     padding: 0;
+}
+
+/* ステータス表示の調整 */
+div[data-testid="stStatus"] {
+    padding: 0.5rem !important;
+    margin: 0.5rem 0 !important;
+}
+
+/* 履歴セクションの調整 */
+div[data-testid="stExpander"] {
+    margin-top: 0.5rem !important;
+    border: none !important;
+}
+
+div[data-testid="stExpander"] > div {
+    padding: 0.5rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -129,7 +152,7 @@ with right_col:
                     result_image = generate_image_with_style(pose_image, style_image)
                     if result_image:
                         status.update(label="画像の生成が完了しました", state="complete")
-                        st.image(result_image, caption="生成された画像", use_container_width=True)
+                        st.image(result_image, caption="生成された画像", use_container_width=False)
 
                         # Add download button
                         buf = io.BytesIO()
@@ -158,18 +181,17 @@ with right_col:
         """, unsafe_allow_html=True)
 
 # Instructions (Minor text adjustments)
-st.markdown("""
----
-### 使い方:
-1. ポーズ参照画像をアップロード
-   - 再現したいポーズの画像を選択してください
-   - 人物がはっきりと写っている画像を使用するのがおすすめです
+with st.expander("使い方"):
+    st.markdown("""
+    1. ポーズ参照画像をアップロード
+       - 再現したいポーズの画像を選択してください
+       - 人物がはっきりと写っている画像を使用するのがおすすめです
 
-2. スタイル参照画像をアップロード
-   - 目標とする画風の画像を選択してください
-   - キャラクターデザインや画風が明確な画像を使用するのがおすすめです
+    2. スタイル参照画像をアップロード
+       - 目標とする画風の画像を選択してください
+       - キャラクターデザインや画風が明確な画像を使用するのがおすすめです
 
-3. 生成された画像を確認
-   - AIが2つの画像を組み合わせて新しい画像を生成します
-   - 必要に応じてダウンロードできます
-""")
+    3. 生成された画像を確認
+       - AIが2つの画像を組み合わせて新しい画像を生成します
+       - 必要に応じてダウンロードできます
+    """)
