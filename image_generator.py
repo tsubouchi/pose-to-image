@@ -38,25 +38,24 @@ def generate_image(pose_image, style_prompt):
                 logger.debug(f"Image encoded to base64 (length: {len(image_data)})")
 
         # Create request contents
-        contents = {
-            "contents": [{
-                "parts":[{
-                    "text": "この棒人間のポーズに基づいて新しい画像を生成してください。以下の要素を含めてください：\n" + style_prompt
-                },{
-                    "inline_data": {
-                        "mime_type": "image/png",
-                        "data": image_data
-                    }
-                }]
-            }]
-        }
+        parts = [
+            {
+                "text": "この棒人間のポーズに基づいて新しい画像を生成してください。以下の要素を含めてください：\n" + style_prompt
+            },
+            {
+                "inline_data": {
+                    "mime_type": "image/png",
+                    "data": image_data
+                }
+            }
+        ]
 
         logger.debug("Sending request to Gemini API")
-        logger.debug(f"Request contents structure: {json.dumps(contents, indent=2)}")
+        logger.debug(f"Request parts structure: {json.dumps(parts, indent=2)}")
 
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(contents)
+        response = model.generate_content(parts)
         logger.debug(f"Response received - Type: {type(response)}")
         logger.debug(f"Response attributes: {dir(response)}")
 
