@@ -19,36 +19,32 @@ def generate_image(pose_image, style_prompt):
 
         image_data = base64.b64encode(img_bytes).decode('utf-8')
         image_parts = {
-            "mime_type": "image/png",
-            "data": image_data
+            "text": "この棒人間のポーズに基づいて、新しい画像を生成してください。",
+            "inline_data": {
+                "mime_type": "image/png",
+                "data": image_data
+            }
         }
-
-        # システムプロンプト - 2段階処理
-        system_prompt = """
-        このプロセスは2段階で行います：
-
-        1. まず、提供された棒人間の画像を解析してください。
-        これは実写画像から抽出されたポーズデータで、人物の姿勢や動きを表現しています。
-
-        2. 次に、解析したポーズに基づいて新しい画像を生成してください。
-        以下の要件で画像を生成します：
-        - imagen3の品質レベルで出力
-        - 抽出されたポーズと完全に一致する姿勢
-        - 現代的な日本の女子高生キャラクター
-        - 自然な光と影の表現
-        - 背景は日本の日常風景
-
-        出力形式：高品質なイラスト画像
-        """
 
         # Generate the image using Gemini
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        response = model.generate_content([
-            {
-                "text": f"{system_prompt}\n\n{style_prompt}"
-            },
-            image_parts
-        ])
+        response = model.generate_content(
+            contents=[
+                {
+                    "text": "この棒人間のポーズで日本人の女子高生をimagen3で出力してください。"
+                    "\n以下の要素を含めてください："
+                    "\n- 明るく現代的なアニメスタイル"
+                    "\n- 自然な光と影の表現"
+                    "\n- 背景は日本の学校や街並み"
+                    f"\n\n追加のスタイル指定：{style_prompt}"
+                },
+                image_parts
+            ],
+            generation_config={
+                "temperature": 0.4,
+                "image_quality": "high"
+            }
+        )
 
         # Extract and return the generated image
         if response.parts:
