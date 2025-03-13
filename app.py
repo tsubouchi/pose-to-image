@@ -3,6 +3,8 @@ from PIL import Image
 import io
 from pose_extractor import extract_pose
 from image_generator import generate_image_with_style
+from pose_analysis import analyze_pose_for_improvements
+import base64
 import logging
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,30 @@ div[data-testid="stStatus"] {
     margin: 0.25rem 0 !important;
 }
 
+/* ポーズ提案セクションのスタイル */
+.pose-suggestions {
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.suggestion-item {
+    background-color: #2a2a2a;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+.strong-points {
+    color: #4CAF50;
+    margin: 5px 0;
+}
+
+.improvement-point {
+    color: #FFC107;
+    margin: 5px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -154,6 +180,45 @@ with right_col:
                 mime="image/png",
                 use_container_width=True
             )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # ポーズの改善提案を表示
+            with st.status("🔍 ポーズを分析中...") as status:
+                # Convert pose image to base64
+                pose_buf = io.BytesIO()
+                pose_image.save(pose_buf, format='JPEG')
+                pose_base64 = base64.b64encode(pose_buf.getvalue()).decode('utf-8')
+
+                # Get pose analysis
+                pose_analysis = analyze_pose_for_improvements(pose_base64)
+                status.update(label="✅ ポーズの分析が完了", state="complete")
+
+            st.markdown('<div class="pose-suggestions">', unsafe_allow_html=True)
+            st.markdown("### 💡 AIポーズアドバイス")
+
+            # 現在のポーズの説明
+            st.markdown("#### 現在のポーズ")
+            st.markdown(pose_analysis["current_pose"])
+
+            # 良い点
+            if pose_analysis["strong_points"]:
+                st.markdown("#### ✨ 良い点")
+                for point in pose_analysis["strong_points"]:
+                    st.markdown(f'<div class="strong-points">• {point}</div>', unsafe_allow_html=True)
+
+            # 改善提案
+            if pose_analysis["suggestions"]:
+                st.markdown("#### 📝 改善提案")
+                for suggestion in pose_analysis["suggestions"]:
+                    st.markdown(
+                        f"""<div class="suggestion-item">
+                        <div class="improvement-point">🎯 {suggestion["point"]}</div>
+                        <div>改善方法: {suggestion["suggestion"]}</div>
+                        <div>理由: {suggestion["reason"]}</div>
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+
             st.markdown('</div>', unsafe_allow_html=True)
 
             # Pose Analysis Details at the bottom
