@@ -154,27 +154,29 @@ def generate_controlnet_openpose(pose_image, style_prompt):
         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
             pose_image.save(tmp_file.name, format='PNG')
 
-        # API endpoint for ControlNet
-        host = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/controlnet"
+        # API endpoint for image-to-image
+        host = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image"
 
         headers = {
             "Accept": "image/*",
             "Authorization": f"Bearer {STABILITY_KEY}"
         }
 
+        # Read image file
+        with open(tmp_file.name, 'rb') as img_file:
+            image_data = img_file.read()
+
         # Prepare the files and parameters
         files = {
-            "init_image": open(tmp_file.name, "rb")
+            "init_image": ('image.png', image_data, 'image/png')
         }
 
         params = {
-            "init_image_mode": "IMAGE_STRENGTH",
             "image_strength": 0.35,
+            "init_image_mode": "IMAGE_STRENGTH",
             "steps": 50,
             "seed": 0,
             "cfg_scale": 7,
-            "controlnet_type": "openpose",  # Specify OpenPose as the ControlNet model
-            "controlnet_strength": 0.7,
             "samples": 1,
             "style_preset": "anime",
             "text_prompts[0][text]": style_prompt,
@@ -189,14 +191,18 @@ def generate_controlnet_openpose(pose_image, style_prompt):
             data=params
         )
 
+        if response.status_code == 404:
+            logger.error(f"API endpoint not found: {host}")
+            raise Exception("API endpoint not found. Please check the Stability AI documentation for the correct endpoint.")
+
         if not response.ok:
-            logger.error(f"ControlNet API Response: {response.text}")
+            logger.error(f"API Response: {response.text}")
             raise Exception(f"HTTP {response.status_code}: {response.text}")
 
         # Process response
         output_image = response.content
         img = Image.open(io.BytesIO(output_image))
-        logger.debug(f"Successfully generated image using ControlNet OpenPose")
+        logger.debug(f"Successfully generated image using image-to-image API")
 
         return img
 
