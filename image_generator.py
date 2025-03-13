@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Flux API configuration
 FLUX_API_KEY = "5db59d74-127a-4240-a028-2662d88522a4:f7e522e4afbf3486f03f771446bbfe4b"
-FLUX_API_URL = "https://cloud.fal.ai/public/flux-pro/v1.1-ultra/completion"
+FLUX_API_URL = "https://fal.ai/public/flux-pro/v1.1-ultra/completion"
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -69,7 +69,8 @@ def generate_image(pose_image, style_prompt, system_prompt):
                 "Authorization": f"Bearer {FLUX_API_KEY}",
                 "Content-Type": "application/json"
             },
-            json=payload
+            json=payload,
+            timeout=60  # Add timeout to prevent hanging
         )
 
         if response.status_code == 200:
