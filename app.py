@@ -22,38 +22,52 @@ st.markdown("""
 }
 
 .upload-section {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.preview-image {
+    max-width: 120px !important;
+    max-height: 120px !important;
+    margin: 0 auto;
 }
 
 .generated-section {
     background-color: #1a1a1a;
     border-radius: 8px;
-    padding: 15px;
-    margin-top: 10px;
-    min-height: 400px;
+    padding: 10px;
+    margin-top: 5px;
+    height: 65vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 /* 生成結果の画像サイズ調整 */
 .generated-section div[data-testid="stImage"] img {
     max-width: 100% !important;
-    max-height: 350px !important;
+    height: 60vh !important;
     object-fit: contain;
 }
 
-/* ステータス表示の調整 */
-div[data-testid="stStatus"] {
-    margin-bottom: 10px !important;
+/* ステータス表示を横並びにコンパクト化 */
+div[data-testid="stHorizontalBlock"] {
+    gap: 0.5rem !important;
 }
 
-/* 入力画像のサイズ調整 */
-.upload-section div[data-testid="stImage"] img {
-    max-width: 25% !important;
-    max-height: 15vh !important;
-    display: block;
-    margin: 0 auto;
+div[data-testid="stImage"] {
+    margin: 0 !important;
+}
+
+/* コンパクトなヘッダー */
+h2 {
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0 !important;
+}
+
+/* アップロード部分のコンパクト化 */
+div[data-testid="stFileUploader"] {
+    padding: 0.25rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -65,7 +79,6 @@ with left_col:
     st.markdown("## Input Images")
 
     # Pose Image Upload Section
-    st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.markdown("#### ポーズ参照画像")
     pose_file = st.file_uploader(
         "再現したいポーズの画像",
@@ -74,11 +87,9 @@ with left_col:
     )
     if pose_file:
         pose_image = Image.open(pose_file)
-        st.image(pose_image)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.image(pose_image, use_container_width=False)
 
     # Style Image Upload Section
-    st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.markdown("#### スタイル参照画像")
     style_file = st.file_uploader(
         "目標とする画風や洋服の画像",
@@ -87,28 +98,31 @@ with left_col:
     )
     if style_file:
         style_image = Image.open(style_file)
-        st.image(style_image)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.image(style_image, use_container_width=False)
 
 with right_col:
     st.markdown("## Generated Result")
 
     if pose_file and style_file:
         try:
-            # Process Status Area
-            with st.status("🔍 ポーズを解析中...") as status:
-                pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
-                if pose_result is None:
-                    st.error("ポーズの検出に失敗しました。別の画像を試してください。")
-                    st.stop()
-                status.update(label="✅ ポーズの解析が完了", state="complete")
+            # Status indicators side by side
+            col1, col2 = st.columns(2)
 
-            with st.status("🎨 画像を生成中...") as status:
-                result_image = generate_image_with_style(pose_image, style_image)
-                if result_image:
-                    status.update(label="✅ 画像の生成が完了", state="complete")
+            with col1:
+                with st.status("🔍 ポーズを解析中...") as status:
+                    pose_result, pose_descriptions, landmarks = extract_pose(pose_image)
+                    if pose_result is None:
+                        st.error("ポーズの検出に失敗しました。別の画像を試してください。")
+                        st.stop()
+                    status.update(label="✅ ポーズの解析が完了", state="complete")
 
-            # Generated Image Display
+            with col2:
+                with st.status("🎨 画像を生成中...") as status:
+                    result_image = generate_image_with_style(pose_image, style_image)
+                    if result_image:
+                        status.update(label="✅ 画像の生成が完了", state="complete")
+
+            # Main preview area
             st.markdown('<div class="generated-section">', unsafe_allow_html=True)
             if result_image:
                 st.image(result_image)
@@ -125,7 +139,7 @@ with right_col:
                 )
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # Analysis Details
+            # Expander is placed at the bottom
             with st.expander("🔍 ポーズ解析の詳細"):
                 if pose_descriptions:
                     st.markdown("**検出されたポーズの特徴:**")
@@ -141,7 +155,7 @@ with right_col:
     else:
         st.info("👈 左側で2つの画像をアップロードしてください")
 
-# Instructions
+# Instructions at the bottom
 with st.expander("💡 使い方"):
     st.markdown("""
     1. ポーズ参照画像をアップロード
