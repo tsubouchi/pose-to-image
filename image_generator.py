@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 # Stability API configuration
 STABILITY_KEY = "sk-Rm5frm48K7sArubPQgJ9r2w8Q75XH5y0UR215NC4Fjndu7gz"
-STABILITY_API_HOST = "https://api.stability.ai/v2beta/generation/image-to-image"
 
 def generate_image(pose_image, style_prompt, system_prompt):
     """
@@ -31,22 +30,20 @@ def generate_image(pose_image, style_prompt, system_prompt):
             logger.debug(f"Input pose image saved to temporary file: {tmp_file.name}")
 
         # Prepare request parameters
+        host = "https://api.stability.ai/v2beta/stable-image/generate/sd3"
         params = {
             "prompt": style_prompt,
-            "image": tmp_file.name,
-            "num_images": 1,
-            "image_strength": 0.35,
-            "steps": 30,
-            "cfg_scale": 7.5,
-            "sampler": "K_EULER_ANCESTRAL",
+            "negative_prompt": "",
+            "aspect_ratio": "1:1",
             "seed": 0,
-            "output_format": "png"
+            "output_format": "png",
+            "model": "sd3.5-large"
         }
 
         logger.debug("Sending request to Stability AI API")
 
         # Send generation request
-        response = send_generation_request(STABILITY_API_HOST, params)
+        response = send_generation_request(host, params)
 
         # Decode response
         output_image = response.content
